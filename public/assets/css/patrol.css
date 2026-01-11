@@ -1,0 +1,88 @@
+
+#patrol_table .patrol-item:hover,
+#patrol_table .patrol-item.context-menu-active,
+#patrol_table .patrol-route:hover,
+#patrol_table .patrol-route.context-menu-active,
+#patrol_table .patrol-tag:hover,
+#patrol_table .patrol-tag.context-menu-active,
+#patrol_table .patrol-form:hover,
+#patrol_table .patrol-form.context-menu-active {
+    background-color: #f7ecb5;
+}
+
+#patrol_table .patrol-item:hover,
+#patrol_table .patrol-route:hover,
+#patrol_table .patrol-form:hover,
+#patrol_table .patrol-tag:hover {
+    cursor: pointer;
+}
+
+#patrol_table td.patrol-field:hover,
+#patrol_table .patrol-field.context-menu-active {
+    background-color: #c8f78f;
+}
+
+#patrol_table td.patrol-field:hover {
+    cursor: pointer;
+}
+
+#route_table .patrol-form {
+    display: inline;
+    padding: .2em .6em .3em;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: .25em;
+    background-color: #3c8dbc !important;
+    margin-right: 5px;
+    float: left;
+    margin-bottom: 5px;
+}
+
+#form_table td.patrol-form-edit {
+    background-color: #f3fff0;
+}
+
+#form_table td.patrol-form-edit:hover {
+    cursor: pointer;
+    background-color: #dffdd8;
+}
+
+#form_table td.patrol-form-select {
+    background-color: #fff0fa;
+}
+
+#form_table td.patrol-form-select:hover {
+    cursor: pointer;
+    background-color: #ffdcf3;
+}
+
+#patrol_table .fmd06_copy_source {
+    background-color: #fcccff;
+}
+
+#patrol_table .patrol-field-select:hover {
+    cursor: pointer;
+}
+
+#patrol_table .patrol-field-select.selected {
+    background-color: #c8f78f;
+}
+
+.fmd06_copy_message,
+.patrol_form_message {
+    position: fixed;
+    z-index: 1000000;
+    bottom: 0;
+    right: 15px;
+}
+
+.patrol_item_group_header{
+    background-color: lightgray;
+    padding: 10px;
+    margin-top: -10px;
+    margin-left: -10px;
+    margin-right: -10px;
+    margin-bottom: 10px;
+}

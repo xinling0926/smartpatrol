@@ -1,0 +1,1 @@
+<div class="alert alert-danger alert-dismissible" style="margin: 10px"><?=$message?></div>

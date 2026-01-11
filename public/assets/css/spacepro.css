@@ -1,0 +1,181 @@
+@font-face {
+    font-family: 'Large9';
+    src: url('Large9-Normal.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.spacepro {
+    display: inline-block;
+    font: normal normal normal 14px/1 Large9;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #eb0000;
+}
+
+.spacepro b {
+    color: #00eb00;
+}
+
+.main-header .spacepro {
+    font-size: 18px;
+    line-height: 50px;
+}
+
+.window_wrapper {
+    padding: 15px;
+}
+
+.dataTable {
+    margin-bottom: 0;
+}
+
+td.a {
+    color: #3c8dbc;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.row .dataTables_info {
+    margin-top: 10px;
+}
+
+div.dataTables_info {
+    margin-left: 4px;
+    white-space: nowrap;
+    float: left;
+}
+
+.row .dataTables_paginate {
+    margin-top: 10px;
+    margin-bottom: -5px;
+}
+
+div.dataTables_paginate ul {
+    margin: 0;
+    white-space: nowrap;
+}
+
+div.dataTables_paginate {
+    float: right;
+}
+
+.box-footer .dataTables_paginate {
+    margin-bottom: -5px;
+}
+
+.dataTables_filter {
+    text-align: right;
+    padding-bottom: 4px;
+}
+
+.dataTables_filter .form-control
+{
+    display: inline;
+    width: inherit;
+}
+
+.dataTables_filter .input-group{
+
+}
+
+div.toolbar {
+    border-radius: 3px;
+    margin: 0 0 20px 0;
+    padding: 4px 0px;
+    border: 1px solid #CCCCCC;
+    background-color: #DDDDDD !important;
+}
+
+.form-horizontal .data {
+    padding-top: 7px;
+    margin-top: 0;
+    margin-bottom: 0;
+    min-height: 27px;
+}
+
+.user_list .user-image {
+    float: left;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin-right: 10px;
+    margin-top: -2px;
+}
+
+/*.box{*/
+/*margin-bottom: 0;*/
+/*}*/
+
+.mask_layer {
+    background: #fff;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 888;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.mask_layer > .fa {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -15px;
+    margin-top: -15px;
+    color: #000;
+    font-size: 60px;
+}
+
+.tree_div {
+    overflow: visible;
+}
+
+.pagination > li > span {
+    cursor: pointer;
+}
+
+@media (min-width: 768px) {
+    .form-horizontal .checkbox_group .control-label {
+        padding-top: 2px;
+    }
+}
+
+.checkbox.inline{
+    margin-right: 15px;
+}
+
+.form-control-group{
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 0;
+    border-color: #d2d6de;
+    display: block;
+    width: 100%;
+    line-height: 1.42857143;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
+    -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    box-shadow: none;
+}
+
+.checkbox label{
+    position: relative;
+}
+
+div.scroll {
+    overflow: auto;
+}
+
+div.scroll td,
+div.scroll th {
+    white-space: nowrap;
+}

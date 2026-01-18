@@ -18,8 +18,12 @@ $routes->group('auth', static function ($routes) {
     $routes->get('secode', 'Auth::secode');
     $routes->get('forgot-password', 'Auth::forgotPassword');
     $routes->post('forgot-password', 'Auth::forgotPassword');
+    $routes->get('forgot_password', 'Auth::forgotPassword');
+    $routes->post('forgot_password', 'Auth::forgotPassword');
     $routes->get('reset-password/(:any)', 'Auth::resetPassword/$1');
     $routes->post('reset-password/(:any)', 'Auth::resetPassword/$1');
+    $routes->get('reset_password/(:any)', 'Auth::resetPassword/$1');
+    $routes->post('reset_password/(:any)', 'Auth::resetPassword/$1');
 });
 
 // Account Routes

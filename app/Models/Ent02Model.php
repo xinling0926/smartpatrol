@@ -135,7 +135,7 @@ class Ent02Model extends BaseModel
             $length = $digests[$digest];
         }
 
-        if (strlen($salt) === 0) {
+        if (strlen($salt ?? '') === 0) {
             $salt = str_repeat("\0", $digests[$digest]);
         }
 

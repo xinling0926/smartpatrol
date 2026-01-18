@@ -250,7 +250,7 @@ class Webapi extends BaseController
                     $json['info'] = sprintf('%s，%s', lang('Webapi.user_lock'), lang('Webapi.contact_admin'));
                 } else {
                     // Verify user
-                    $user = $this->sys01Model->checkUser($identity);
+                    $user = $this->sys01Model->checkUserByIdentity($identity);
                     if ($user) {
                         if ($this->user->passwordVerify($user->sys0105, $password, $user->sys0106)) {
                             $json['status'] = 'success';

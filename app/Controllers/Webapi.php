@@ -1971,15 +1971,18 @@ class Webapi extends BaseController
             }
 
             log_message('debug', '[Webapi] photograph - END, response: ' . json_encode($json));
-            return $this->response->setJSON($json);
+            // 使用與 CI3 相同的輸出方式
+            echo json_encode($json);
+            exit;
 
         } catch (\Exception $e) {
             log_message('error', '[Webapi] photograph - Exception: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return $this->response->setJSON([
+            echo json_encode([
                 'status' => 'fail',
                 'info' => lang('Webapi.upload_fail'),
                 'debug' => $e->getMessage()
             ]);
+            exit;
         }
     }
 }

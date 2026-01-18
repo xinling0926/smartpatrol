@@ -35,15 +35,47 @@ class Webapi extends BaseController
         return $this->response->setJSON(['status' => 'ok', 'message' => 'Webapi is running']);
     }
 
+    /**
+     * 取得請求參數（支援 POST form-data 和 JSON body）
+     * CI3 使用 $this->input->post()，CI4 需要分別處理 form-data 和 JSON
+     */
+    private function getParam(string $key, $default = '')
+    {
+        // 先嘗試 POST form-data
+        $value = $this->request->getPost($key);
+        if ($value !== null) {
+            return is_string($value) ? trim($value) : $value;
+        }
+
+        // 再嘗試 JSON body
+        $json = $this->request->getJSON(true);
+        if (is_array($json) && isset($json[$key])) {
+            $val = $json[$key];
+            return is_string($val) ? trim($val) : $val;
+        }
+
+        // 最後嘗試 raw input (for x-www-form-urlencoded)
+        $raw = $this->request->getRawInput();
+        if (is_array($raw) && isset($raw[$key])) {
+            $val = $raw[$key];
+            return is_string($val) ? trim($val) : $val;
+        }
+
+        return $default;
+    }
+
     public function register(): \CodeIgniter\HTTP\ResponseInterface
     {
         $json = ['status' => 'fail', 'info' => '', 'ent0105' => ''];
 
-        $ent0102 = trim($this->request->getPost('ent0102') ?? '');
-        $dev0105 = trim($this->request->getPost('dev0105') ?? '');
-        $imei = trim($this->request->getPost('os_imei') ?? '');
-        $dev0107 = trim($this->request->getPost('dev0107') ?? '');
-        $version = trim($this->request->getPost('version') ?? '');
+        $ent0102 = $this->getParam('ent0102', '');
+        $dev0105 = $this->getParam('dev0105', '');
+        $imei = $this->getParam('os_imei', '');
+        $dev0107 = $this->getParam('dev0107', '');
+        $version = $this->getParam('version', '');
+
+        // Debug log
+        log_message('debug', '[Webapi] register - ent0102: ' . $ent0102 . ', dev0105: ' . $dev0105);
 
         $version = match ($version) {
             '1' => 'v1.0',
@@ -55,13 +87,13 @@ class Webapi extends BaseController
 
         // Device hardware parameters
         $hardware = [
-            'display' => trim($this->request->getPost('os_display') ?? ''),
-            'release' => trim($this->request->getPost('os_release') ?? ''),
-            'model' => trim($this->request->getPost('os_model') ?? ''),
-            'androidid' => trim($this->request->getPost('os_id') ?? ''),
-            'sim' => trim($this->request->getPost('os_sim') ?? ''),
-            'serial' => trim($this->request->getPost('os_serial') ?? ''),
-            'imei' => trim($this->request->getPost('os_imei') ?? ''),
+            'display' => $this->getParam('os_display', ''),
+            'release' => $this->getParam('os_release', ''),
+            'model' => $this->getParam('os_model', ''),
+            'androidid' => $this->getParam('os_id', ''),
+            'sim' => $this->getParam('os_sim', ''),
+            'serial' => $this->getParam('os_serial', ''),
+            'imei' => $this->getParam('os_imei', ''),
         ];
         $hardwareData = json_encode($hardware);
 
@@ -158,17 +190,17 @@ class Webapi extends BaseController
             return $this->response->setJSON($json);
         }
 
-        $identity = trim($this->request->getPost('user') ?? '');
-        $password = trim($this->request->getPost('pass') ?? '');
-        $dev0101 = (int)($this->request->getPost('dev0101') ?? 0);
-        $dev0105 = trim($this->request->getPost('dev0105') ?? '');
-        $dev0107 = trim($this->request->getPost('dev0107') ?? '');
+        $identity = $this->getParam('user', '');
+        $password = $this->getParam('pass', '');
+        $dev0101 = (int)$this->getParam('dev0101', 0);
+        $dev0105 = $this->getParam('dev0105', '');
+        $dev0107 = $this->getParam('dev0107', '');
 
         if ($dev0107 === 'null') {
             $dev0107 = '';
         }
 
-        $version = trim($this->request->getPost('version') ?? '');
+        $version = $this->getParam('version', '');
         $version = match ($version) {
             '1' => 'v1.0',
             '2' => 'v1.1',
@@ -176,6 +208,9 @@ class Webapi extends BaseController
             '4' => 'v1.3',
             default => 'v' . $version,
         };
+
+        // Debug log
+        log_message('debug', '[Webapi] login - user: ' . $identity . ', dev0101: ' . $dev0101);
 
         if (empty($identity)) {
             $json['info'] = lang('Webapi.sys0102_empty');

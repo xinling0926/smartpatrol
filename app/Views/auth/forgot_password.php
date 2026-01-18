@@ -8,7 +8,7 @@
     <?php endif ?>
     <?= form_open() ?>
     <div class="form-group has-feedback">
-        <?= form_text_input('identity', null, null, 'placeholder=' . $identity_label) ?>
+        <?= form_text_input('identity', null, '', 'placeholder=' . $identity_label) ?>
         <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
     </div>
     <div class="row">

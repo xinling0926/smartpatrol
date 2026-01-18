@@ -47,11 +47,15 @@ class Webapi extends BaseController
             return is_string($value) ? trim($value) : $value;
         }
 
-        // 再嘗試 JSON body
-        $json = $this->request->getJSON(true);
-        if (is_array($json) && isset($json[$key])) {
-            $val = $json[$key];
-            return is_string($val) ? trim($val) : $val;
+        // 再嘗試 JSON body (需要 try-catch 因為非 JSON 會拋出例外)
+        try {
+            $json = $this->request->getJSON(true);
+            if (is_array($json) && isset($json[$key])) {
+                $val = $json[$key];
+                return is_string($val) ? trim($val) : $val;
+            }
+        } catch (\Exception $e) {
+            // 不是有效的 JSON，忽略
         }
 
         // 最後嘗試 raw input (for x-www-form-urlencoded)

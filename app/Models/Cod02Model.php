@@ -9,6 +9,9 @@ class Cod02Model extends BaseModel
 {
     protected $table = 'cod02';
     protected $primaryKey = 'cod0201';
+    protected $allowedFields = [
+        'cod0202', 'cod0203', 'cod0204', 'cod0205', 'cod0206', 'cod0207'
+    ];
 
     /**
      * 依代碼取得選項陣列

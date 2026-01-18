@@ -36,16 +36,25 @@ class Webapi extends BaseController
     }
 
     /**
-     * 回傳 JSON 響應（避免 chunked transfer encoding）
-     * 設定 Content-Length header 讓舊版 App 能正確解析
+     * 回傳 JSON 響應（完全繞過 CI4 的響應處理，避免 chunked transfer encoding）
+     * 使用 PHP 原生輸出，與 CI3 的 echo json_encode() 相同效果
      */
-    private function jsonResponse(array $data): \CodeIgniter\HTTP\ResponseInterface
+    private function jsonResponse(array $data): never
     {
         $output = json_encode($data);
-        return $this->response
-            ->setHeader('Content-Type', 'application/json')
-            ->setHeader('Content-Length', (string)strlen($output))
-            ->setBody($output);
+
+        // 清除所有輸出緩衝區
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        // 設定 HTTP headers
+        header('Content-Type: application/json');
+        header('Content-Length: ' . strlen($output));
+
+        // 直接輸出並終止
+        echo $output;
+        exit;
     }
 
     /**

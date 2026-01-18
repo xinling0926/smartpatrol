@@ -448,7 +448,7 @@ class User
     /**
      * 增加登入嘗試次數
      */
-    protected function increaseLoginAttempts(string $identity): void
+    public function increaseLoginAttempts(string $identity): void
     {
         $this->db->table('log01')->insert([
             'log0102' => $identity,
@@ -460,7 +460,7 @@ class User
     /**
      * 清除登入嘗試記錄
      */
-    protected function clearLoginAttempts(string $identity): void
+    public function clearLoginAttempts(string $identity): void
     {
         $this->db->table('log01')
             ->where('log0102', $identity)

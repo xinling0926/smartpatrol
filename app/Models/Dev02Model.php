@@ -9,6 +9,9 @@ class Dev02Model extends BaseModel
 {
     protected $table = 'dev02';
     protected $primaryKey = 'dev0201';
+    protected $allowedFields = [
+        'dev0202', 'dev0203', 'dev0204', 'dev0205', 'dev0206', 'dev0207'
+    ];
 
     /**
      * 覆寫 getBy 加入 join 和預處理

@@ -9,6 +9,10 @@ class Pad01Model extends BaseModel
 {
     protected $table = 'pad01';
     protected $primaryKey = 'pad0101';
+    protected $allowedFields = [
+        'pad0102', 'pad0103', 'pad0104', 'pad0105', 'pad0106', 'pad0107',
+        'pad0108', 'pad0109', 'pad0110', 'pad0111', 'pad0112', 'pad0113'
+    ];
 
     /**
      * 取得使用者的部門限制條件

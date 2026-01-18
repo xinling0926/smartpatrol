@@ -340,6 +340,13 @@ class User
     {
         $hashMethod = $this->rbacConfig['hash_method'] ?? 'password_bcrypt';
 
+        // 除錯資訊
+        log_message('debug', "=== Password Verify Debug ===");
+        log_message('debug', "Hash Method: {$hashMethod}");
+        log_message('debug', "Salt: {$salt}");
+        log_message('debug', "Stored Hash: {$hash}");
+        log_message('debug', "Calculated SHA1: " . sha1($salt . $password));
+
         switch (strtolower($hashMethod)) {
             case 'sha1':
                 return sha1($salt . $password) === $hash;

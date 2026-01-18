@@ -93,7 +93,7 @@ class Device extends AdminController
 
     public function edit(int $id = 0): string|\CodeIgniter\HTTP\ResponseInterface
     {
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [

@@ -37,7 +37,7 @@ class Auth extends BaseController
         $this->data['use_sec_code'] = $useSecCode;
         $this->data['identity_column'] = $identityColumn;
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $rules = [
                 'identity' => 'required',
                 'password' => 'required',
@@ -110,7 +110,7 @@ class Auth extends BaseController
             'identity' => 'required',
         ];
 
-        if ($this->request->getMethod() !== 'post' || !$this->validate($rules)) {
+        if (!$this->request->is('post') || !$this->validate($rules)) {
             $this->data['identity_label'] = $identityLabel;
             $this->data['message'] = \Config\Services::validation()->listErrors() ?: $this->session->getFlashdata('message');
             return $this->render('auth');
@@ -144,7 +144,7 @@ class Auth extends BaseController
                 'new_confirm' => 'required',
             ];
 
-            if ($this->request->getMethod() !== 'post' || !$this->validate($rules)) {
+            if (!$this->request->is('post') || !$this->validate($rules)) {
                 $this->data['message'] = \Config\Services::validation()->listErrors() ?: $this->session->getFlashdata('message');
                 $this->data['min_password_length'] = $minLength;
                 return $this->render('auth');

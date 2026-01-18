@@ -87,7 +87,7 @@ class Notice extends AdminController
     {
         $ent0101 = $this->session->get('ent0101');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [

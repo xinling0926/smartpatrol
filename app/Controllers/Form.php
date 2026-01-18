@@ -100,7 +100,7 @@ class Form extends AdminController
 
     public function edit(int $id = 0): string|\CodeIgniter\HTTP\ResponseInterface
     {
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [];
@@ -151,7 +151,7 @@ class Form extends AdminController
     {
         $fmd02Model = model('Fmd02Model');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [
@@ -192,7 +192,7 @@ class Form extends AdminController
     {
         $fmd03Model = model('Fmd03Model');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [
@@ -230,7 +230,7 @@ class Form extends AdminController
     {
         $fmd05Model = model('Fmd05Model');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [

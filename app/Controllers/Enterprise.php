@@ -60,7 +60,7 @@ class Enterprise extends AdminController
 
     public function edit(int $id = 0): string|\CodeIgniter\HTTP\ResponseInterface
     {
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [
@@ -242,7 +242,7 @@ class Enterprise extends AdminController
     {
         $cod02Model = model('Cod02Model');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             $rules = [

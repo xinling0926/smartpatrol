@@ -55,7 +55,7 @@ class SystemSetting extends AdminController
 
     public function edit(int $id = 0): string|\CodeIgniter\HTTP\ResponseInterface
     {
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             if (!isset($postData['system_setting_function'])) {
@@ -129,7 +129,7 @@ class SystemSetting extends AdminController
 
     public function androidManEdit(): string|\CodeIgniter\HTTP\ResponseInterface
     {
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             return $this->ajaxReturn('OK', ['id' => null]);
         }
 

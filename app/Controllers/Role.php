@@ -105,7 +105,7 @@ class Role extends AdminController
     {
         $ent0101 = $this->session->get('ent0101');
 
-        if ($this->request->getMethod() === 'post') {
+        if ($this->request->is('post')) {
             $postData = $this->request->getPost();
 
             if (isset($postData['rol0105']) && is_array($postData['rol0105'])) {

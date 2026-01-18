@@ -32,7 +32,20 @@ class Webapi extends BaseController
 
     public function index(): \CodeIgniter\HTTP\ResponseInterface
     {
-        return $this->response->setJSON(['status' => 'ok', 'message' => 'Webapi is running']);
+        return $this->jsonResponse(['status' => 'ok', 'message' => 'Webapi is running']);
+    }
+
+    /**
+     * 回傳 JSON 響應（避免 chunked transfer encoding）
+     * 設定 Content-Length header 讓舊版 App 能正確解析
+     */
+    private function jsonResponse(array $data): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $output = json_encode($data);
+        return $this->response
+            ->setHeader('Content-Type', 'application/json')
+            ->setHeader('Content-Length', (string)strlen($output))
+            ->setBody($output);
     }
 
     /**
@@ -181,7 +194,7 @@ class Webapi extends BaseController
             }
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     public function login(): \CodeIgniter\HTTP\ResponseInterface
@@ -191,7 +204,7 @@ class Webapi extends BaseController
         $path = FCPATH . 'data/temp';
         if (!file_exists($path) && !mkdir($path, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $identity = $this->getParam('user', '');
@@ -355,7 +368,7 @@ class Webapi extends BaseController
             }
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -648,7 +661,7 @@ class Webapi extends BaseController
 
     public function logout(): \CodeIgniter\HTTP\ResponseInterface
     {
-        return $this->response->setJSON(['status' => 'success', 'info' => 'Logged out']);
+        return $this->jsonResponse(['status' => 'success', 'info' => 'Logged out']);
     }
 
     public function checkVersion(): \CodeIgniter\HTTP\ResponseInterface
@@ -660,7 +673,7 @@ class Webapi extends BaseController
             'app_filesize' => (int)($this->setting->item('app_filesize') ?? 0),
         ];
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -710,7 +723,7 @@ class Webapi extends BaseController
             }
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -726,13 +739,13 @@ class Webapi extends BaseController
         $path = FCPATH . 'data/avatar';
         if (!file_exists($path) && !mkdir($path, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $path = sprintf('%s/%s/', $path, $sys0101);
         if (!file_exists($path) && !mkdir($path, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $sys0117 = sprintf('%s.jpg', time());
@@ -748,7 +761,7 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.upload_error' . ($file ? $file->getError() : '4'));
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -809,13 +822,13 @@ class Webapi extends BaseController
                 $path = FCPATH . 'data/pad0203';
                 if (!file_exists($path) && !mkdir($path, 0777, true)) {
                     $json['info'] = lang('Webapi.mkdir_fail');
-                    return $this->response->setJSON($json);
+                    return $this->jsonResponse($json);
                 }
 
                 $devPath = $path . '/' . $dev01->dev0101;
                 if (!file_exists($devPath) && !mkdir($devPath, 0777, true)) {
                     $json['info'] = lang('Webapi.mkdir_fail');
-                    return $this->response->setJSON($json);
+                    return $this->jsonResponse($json);
                 }
 
                 $pad0101 = $pad01Model->insert($pad01);
@@ -859,7 +872,7 @@ class Webapi extends BaseController
             $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -880,11 +893,11 @@ class Webapi extends BaseController
         $zipPath = FCPATH . 'data/pad0203/zip';
         if (!file_exists(FCPATH . 'data/pad0203') && !mkdir(FCPATH . 'data/pad0203', 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
         if (!file_exists($zipPath) && !mkdir($zipPath, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
@@ -893,13 +906,13 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.dev01_not_exists');
             $json['dev0101'] = $dev0101;
             $json['dev0105'] = $dev0105;
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         } elseif ((int)$dev01s[0]->dev0106 !== 1) {
             $json['info'] = lang('Webapi.dev01_not_enable');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         } elseif ((int)$dev01s[0]->ent0104 !== 1) {
             $json['info'] = lang('Webapi.ent10_not_enable');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01 = $dev01s[0];
@@ -910,7 +923,7 @@ class Webapi extends BaseController
         $file = $this->request->getFile('file1');
         if (!$file || !$file->isValid()) {
             $json['info'] = lang('Webapi.upload_error' . ($file ? $file->getError() : '4'));
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $zipfile = sprintf('%s/%s_%s.zip', $zipPath, $dev0101, $time);
@@ -922,7 +935,7 @@ class Webapi extends BaseController
             $extractPath = FCPATH . 'data/pad0203/' . $dev01->dev0101;
             if (!file_exists($extractPath) && !mkdir($extractPath, 0777, true)) {
                 $json['info'] = lang('Webapi.mkdir_fail');
-                return $this->response->setJSON($json);
+                return $this->jsonResponse($json);
             }
 
             $zip->extractTo($extractPath);
@@ -979,7 +992,7 @@ class Webapi extends BaseController
         $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
         log_message('info', '[Webapi] addpad01multi end');
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1025,13 +1038,13 @@ class Webapi extends BaseController
                     $path = FCPATH . 'data/pad0403';
                     if (!file_exists($path) && !mkdir($path, 0777, true)) {
                         $json['info'] = lang('Webapi.mkdir_fail');
-                        return $this->response->setJSON($json);
+                        return $this->jsonResponse($json);
                     }
 
                     $devPath = $path . '/' . $dev01->dev0104;
                     if (!file_exists($devPath) && !mkdir($devPath, 0777, true)) {
                         $json['info'] = lang('Webapi.mkdir_fail');
-                        return $this->response->setJSON($json);
+                        return $this->jsonResponse($json);
                     }
 
                     $pad03 = [
@@ -1074,7 +1087,7 @@ class Webapi extends BaseController
             }
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1090,7 +1103,7 @@ class Webapi extends BaseController
             $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1106,13 +1119,13 @@ class Webapi extends BaseController
         $path = FCPATH . 'data/databases';
         if (!file_exists($path) && !mkdir($path, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $devPath = $path . '/' . $dev0101;
         if (!file_exists($devPath) && !mkdir($devPath, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $file = $this->request->getFile('file1');
@@ -1125,7 +1138,7 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.upload_error' . ($file ? $file->getError() : '4'));
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1155,7 +1168,7 @@ class Webapi extends BaseController
             $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
         }
 
-        return $this->response->setJSON($version);
+        return $this->jsonResponse($version);
     }
 
     /**
@@ -1171,7 +1184,7 @@ class Webapi extends BaseController
             "SELECT sys0101, sys0103 AS fname, sys0104 AS lname, sys0111 AS tel, sys0110 AS unit_id, b.ent1004 AS unit_name FROM sys01 AS a LEFT JOIN ent10 AS b ON a.sys0110=b.ent1001 WHERE sys0108 = 1"
         )->getResult();
 
-        return $this->response->setJSON(['unit' => $depts, 'staff' => $users]);
+        return $this->jsonResponse(['unit' => $depts, 'staff' => $users]);
     }
 
     /**
@@ -1281,7 +1294,7 @@ class Webapi extends BaseController
         $path = FCPATH . 'data/temp';
         if (!file_exists($path) && !mkdir($path, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
@@ -1290,7 +1303,7 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.dev01_not_exists');
             $json['dev0101'] = $dev0101;
             $json['dev0105'] = $dev0105;
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01 = $dev01s[0];
@@ -1537,7 +1550,7 @@ class Webapi extends BaseController
             $json['filesize'] = 0;
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1562,7 +1575,7 @@ class Webapi extends BaseController
 
         if (empty($ent0102)) {
             $json['info'] = lang('Webapi.ent0102_empty');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $ent01Model = model('Ent01Model');
@@ -1570,13 +1583,13 @@ class Webapi extends BaseController
 
         if (!$ent01s || count($ent01s) === 0) {
             $json['info'] = lang('Webapi.ent0102_not_exists');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $ent01 = $ent01s[0];
         if ((int)$ent01->ent0104 === 0) {
             $json['info'] = lang('Webapi.ent10_disable');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         // 查詢異常巡檢結果
@@ -1630,7 +1643,7 @@ class Webapi extends BaseController
         }
 
         $json = ['status' => 'success', 'info' => '', 'list' => $result];
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1648,12 +1661,12 @@ class Webapi extends BaseController
         $zipPath = FCPATH . 'data/pad0304';
         if (!file_exists($zipPath) && !mkdir($zipPath, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
         $zipPath .= '/zip';
         if (!file_exists($zipPath) && !mkdir($zipPath, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
@@ -1661,13 +1674,13 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.dev01_not_exists');
             $json['dev0101'] = $dev0101;
             $json['dev0105'] = $dev0105;
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         } elseif ((int)$dev01s[0]->dev0106 !== 1) {
             $json['info'] = lang('Webapi.dev01_not_enable');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         } elseif ((int)$dev01s[0]->ent0104 !== 1) {
             $json['info'] = lang('Webapi.ent10_not_enable');
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $dev01 = $dev01s[0];
@@ -1675,7 +1688,7 @@ class Webapi extends BaseController
 
         if (!$file || !$file->isValid()) {
             $json['info'] = lang('Webapi.upload_error' . ($file ? $file->getError() : '4'));
-            return $this->response->setJSON($json);
+            return $this->jsonResponse($json);
         }
 
         $zipfile = sprintf('%s/%s_%s.zip', $zipPath, $dev0101, $time);
@@ -1747,7 +1760,7 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.zip_cannot_open');
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1772,7 +1785,7 @@ class Webapi extends BaseController
 
         $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1805,7 +1818,7 @@ class Webapi extends BaseController
         }
 
         $json = ['status' => 'success', 'info' => lang('Webapi.upload_success')];
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1843,7 +1856,7 @@ class Webapi extends BaseController
             $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
         }
 
-        return $this->response->setJSON($json);
+        return $this->jsonResponse($json);
     }
 
     /**
@@ -1924,7 +1937,7 @@ class Webapi extends BaseController
                     if (!file_exists($photoBase) && !mkdir($photoBase, 0777, true)) {
                         log_message('error', '[Webapi] photograph - mkdir failed: ' . $photoBase);
                         $json['info'] = lang('Webapi.mkdir_fail');
-                        return $this->response->setJSON($json);
+                        return $this->jsonResponse($json);
                     }
                     log_message('debug', '[Webapi] photograph - directory ready');
 
@@ -1975,24 +1988,15 @@ class Webapi extends BaseController
             }
 
             log_message('debug', '[Webapi] photograph - END, response: ' . json_encode($json));
-            // 使用正確的方式回傳 JSON，避免 chunked encoding
-            $output = json_encode($json);
-            return $this->response
-                ->setHeader('Content-Type', 'application/json')
-                ->setHeader('Content-Length', strlen($output))
-                ->setBody($output);
+            return $this->jsonResponse($json);
 
         } catch (\Exception $e) {
             log_message('error', '[Webapi] photograph - Exception: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            $output = json_encode([
+            return $this->jsonResponse([
                 'status' => 'fail',
                 'info' => lang('Webapi.upload_fail'),
                 'debug' => $e->getMessage()
             ]);
-            return $this->response
-                ->setHeader('Content-Type', 'application/json')
-                ->setHeader('Content-Length', strlen($output))
-                ->setBody($output);
         }
     }
 }

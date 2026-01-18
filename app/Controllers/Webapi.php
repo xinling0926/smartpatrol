@@ -253,18 +253,37 @@ class Webapi extends BaseController
                     $user = $this->sys01Model->checkUserByIdentity($identity);
                     if ($user) {
                         if ($this->user->passwordVerify($user->sys0105, $password, $user->sys0106)) {
-                            $json['status'] = 'success';
-                            $json['info'] = lang('Webapi.user_login_success');
-                            // Return user data with specific fields for API (same format as register)
-                            $json['sys01'] = $this->db->query(
-                                "select sys0101,sys0102,sys0103,sys0104,sys0105,sys0106,sys0107,sys0108,sys0110,sys0111,sys0117,sys0121,sys01z2,sys01z4 from sys01 where sys0101=?",
-                                [$user->sys0101]
-                            )->getRow();
-                            $json['dev01'] = $dev01;
+                            if ((int)$user->sys0108 === 0) {
+                                // Account not enabled
+                                $json['info'] = lang('Webapi.sys01_not_enable');
+                                $this->user->addLoginLog($identity, 1, 3, $user->sys0101);
+                            } else {
+                                // Login success - match CI3 response format
+                                $this->sys01Model->updateLastLogin($user->sys0101);
 
-                            // Clear login attempts
-                            $this->user->clearLoginAttempts($identity);
-                            $this->user->addLoginLog($identity, 1, 1);
+                                // Clear login attempts
+                                $this->user->clearLoginAttempts($identity);
+                                $this->user->addLoginLog($identity, 1, 1, $user->sys0101);
+
+                                // Settings array (same as CI3)
+                                $set01s = [];
+                                $set01s[] = ['set0102' => 'pad03_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_of2', $dev01->dev0102) > 0 ? 1 : 0];
+                                $set01s[] = ['set0102' => 'pad04_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_photo', $dev01->dev0102) > 0 ? 1 : 0];
+                                $set01s[] = ['set0102' => 'power_low_alert', 'set0103' => $this->setting->item('power_low_alert') ?? '20'];
+
+                                $json['status'] = 'success';
+                                $json['info'] = lang('Webapi.user_login_success');
+                                $json['sys0101'] = $user->sys0101;  // Only return user ID (CI3 format)
+                                $json['set01'] = $set01s;
+                                $json['file'] = '';
+                                $json['filesize'] = 0;
+
+                                // Update device info
+                                $this->dev01Model->update($dev0101, [
+                                    'dev0109' => date('Y-m-d H:i:s'),
+                                    'dev0111' => $version,
+                                ]);
+                            }
                         } else {
                             $this->user->increaseLoginAttempts($identity);
                             $json['info'] = lang('Webapi.user_login_fail');

@@ -9,6 +9,9 @@ class Pad07Model extends BaseModel
 {
     protected $table = 'pad07';
     protected $primaryKey = 'pad0701';
+    protected $allowedFields = [
+        'pad0702', 'pad0703', 'pad0704', 'pad0705', 'pad0706', 'pad0707', 'pad0708'
+    ];
 
     /**
      * Count records with joins

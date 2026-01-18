@@ -255,7 +255,11 @@ class Webapi extends BaseController
                         if ($this->user->passwordVerify($user->sys0105, $password, $user->sys0106)) {
                             $json['status'] = 'success';
                             $json['info'] = lang('Webapi.user_login_success');
-                            $json['sys01'] = $user;
+                            // Return user data with specific fields for API (same format as register)
+                            $json['sys01'] = $this->db->query(
+                                "select sys0101,sys0102,sys0103,sys0104,sys0105,sys0106,sys0107,sys0108,sys0110,sys0111,sys0117,sys0121,sys01z2,sys01z4 from sys01 where sys0101=?",
+                                [$user->sys0101]
+                            )->getRow();
                             $json['dev01'] = $dev01;
 
                             // Clear login attempts

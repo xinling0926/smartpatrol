@@ -1864,7 +1864,7 @@ class Webapi extends BaseController
             $json['info'] = lang('Webapi.dev01_not_enable');
         } elseif ((int)$dev01s[0]->ent0104 !== 1) {
             $json['info'] = lang('Webapi.ent10_not_enable');
-        } elseif (empty($pad0707) || !json_decode($pad0707)) {
+        } elseif (empty($pad0707) || !json_encode($pad0707)) {
             $json['info'] = lang('Webapi.json_error');
         } else {
             $dev01 = $dev01s[0];

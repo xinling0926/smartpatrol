@@ -200,6 +200,16 @@ class Webapi extends BaseController
             $dev0107 = '';
         }
 
+        // Incremental sync timestamps (CI3 compatible)
+        $fmd01z4 = $this->getParam('fmd01z4', '');
+        $fmd10z4 = $this->getParam('fmd10z4', '');
+        $sys01z4 = $this->getParam('sys01z4', '');
+        $ent10z4 = $this->getParam('ent10z4', '');
+        if ($fmd01z4 === 'null') $fmd01z4 = '';
+        if ($fmd10z4 === 'null') $fmd10z4 = '';
+        if ($sys01z4 === 'null') $sys01z4 = '';
+        if ($ent10z4 === 'null') $ent10z4 = '';
+
         $version = $this->getParam('version', '');
         $version = match ($version) {
             '1' => 'v1.0',
@@ -208,6 +218,18 @@ class Webapi extends BaseController
             '4' => 'v1.3',
             default => 'v' . $version,
         };
+
+        // Hardware info collection (CI3 compatible)
+        $hardware = [
+            'display' => $this->getParam('os_display', ''),
+            'release' => $this->getParam('os_release', ''),
+            'model' => $this->getParam('os_model', ''),
+            'androidid' => $this->getParam('os_id', ''),
+            'sim' => $this->getParam('os_sim', ''),
+            'serial' => $this->getParam('os_serial', ''),
+            'imei' => $this->getParam('os_imei', ''),
+        ];
+        $hardwareData = json_encode($hardware);
 
         // Debug log
         log_message('debug', '[Webapi] login - user: ' . $identity . ', dev0101: ' . $dev0101);
@@ -252,37 +274,71 @@ class Webapi extends BaseController
                     // Verify user
                     $user = $this->sys01Model->checkUserByIdentity($identity);
                     if ($user) {
-                        if ($this->user->passwordVerify($user->sys0105, $password, $user->sys0106)) {
+                        // AD Authentication check (CI3 compatible)
+                        $isAuth = false;
+                        if (($user->sys0121 ?? '0') === '1') {
+                            // User uses AD authentication
+                            $isAuth = $this->user->adVerify($identity, $password);
+                            // If AD auth passed, sync password to local
+                            if ($isAuth) {
+                                $this->user->changePassword($user->sys0101, $password);
+                            }
+                        } else {
+                            // Local password authentication
+                            $isAuth = $this->user->passwordVerify($user->sys0105, $password, $user->sys0106 ?? '');
+                        }
+
+                        if ($isAuth) {
                             if ((int)$user->sys0108 === 0) {
                                 // Account not enabled
                                 $json['info'] = lang('Webapi.sys01_not_enable');
                                 $this->user->addLoginLog($identity, 1, 3, $user->sys0101);
                             } else {
-                                // Login success - match CI3 response format
-                                $this->sys01Model->updateLastLogin($user->sys0101);
+                                // Department restriction check (CI3 compatible)
+                                $depId = $this->ent10Model->getSubDepartmentId($dev01->dev0103 ?? '');
+                                $depId = empty($depId) ? ($dev01->dev0103 ?? '') : sprintf("%s,%s", $dev01->dev0103, $depId);
 
-                                // Clear login attempts
-                                $this->user->clearLoginAttempts($identity);
-                                $this->user->addLoginLog($identity, 1, 1, $user->sys0101);
+                                if ((int)($dev01->dev0103 ?? 0) && !in_array($user->sys0110, explode(",", $depId))) {
+                                    // User's department not allowed for this device
+                                    $json['info'] = sprintf(lang('Webapi.dev01_format01'), $dev01->ent1004 ?? '');
+                                } else {
+                                    // Login success
+                                    $this->sys01Model->updateLastLogin($user->sys0101);
 
-                                // Settings array (same as CI3)
-                                $set01s = [];
-                                $set01s[] = ['set0102' => 'pad03_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_of2', $dev01->dev0102) > 0 ? 1 : 0];
-                                $set01s[] = ['set0102' => 'pad04_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_photo', $dev01->dev0102) > 0 ? 1 : 0];
-                                $set01s[] = ['set0102' => 'power_low_alert', 'set0103' => $this->setting->item('power_low_alert') ?? '20'];
+                                    // Clear login attempts
+                                    $this->user->clearLoginAttempts($identity);
+                                    $this->user->addLoginLog($identity, 1, 1, $user->sys0101);
 
-                                $json['status'] = 'success';
-                                $json['info'] = lang('Webapi.user_login_success');
-                                $json['sys0101'] = $user->sys0101;  // Only return user ID (CI3 format)
-                                $json['set01'] = $set01s;
-                                $json['file'] = '';
-                                $json['filesize'] = 0;
+                                    // Check user's department in enterprise
+                                    $ent10 = $this->db->query("select * from ent10 where ent1001=? and ent1002=?", [$user->sys0110, $dev01->dev0102])->getRow();
 
-                                // Update device info
-                                $this->dev01Model->update($dev0101, [
-                                    'dev0109' => date('Y-m-d H:i:s'),
-                                    'dev0111' => $version,
-                                ]);
+                                    if (!$ent10) {
+                                        $json['info'] = lang('Webapi.ent01_not_exists');
+                                    } else {
+                                        // Generate ZIP sync file (CI3 compatible)
+                                        $zipResult = $this->generateLoginSyncZip($dev01, $ent10, $depId, $fmd01z4, $fmd10z4, $sys01z4, $ent10z4);
+
+                                        // Settings array (same as CI3)
+                                        $set01s = [];
+                                        $set01s[] = ['set0102' => 'pad03_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_of2', $dev01->dev0102) > 0 ? 1 : 0];
+                                        $set01s[] = ['set0102' => 'pad04_enable', 'set0103' => $this->ent02Model->getLicenseCount('smart_patrol_photo', $dev01->dev0102) > 0 ? 1 : 0];
+                                        $set01s[] = ['set0102' => 'power_low_alert', 'set0103' => $this->setting->item('power_low_alert') ?? '20'];
+
+                                        $json['status'] = 'success';
+                                        $json['info'] = lang('Webapi.user_login_success');
+                                        $json['sys0101'] = $user->sys0101;
+                                        $json['set01'] = $set01s;
+                                        $json['file'] = $zipResult['file'];
+                                        $json['filesize'] = $zipResult['filesize'];
+
+                                        // Update device info with hardware data (CI3 compatible)
+                                        $this->dev01Model->update($dev0101, [
+                                            'dev0109' => date('Y-m-d H:i:s'),
+                                            'dev0111' => $version,
+                                            'dev0113' => $hardwareData,
+                                        ]);
+                                    }
+                                }
                             }
                         } else {
                             $this->user->increaseLoginAttempts($identity);
@@ -296,6 +352,294 @@ class Webapi extends BaseController
         }
 
         return $this->response->setJSON($json);
+    }
+
+    /**
+     * Generate ZIP sync file for login (CI3 compatible)
+     */
+    private function generateLoginSyncZip(object $dev01, object $ent10, string $depId, string $fmd01z4, string $fmd10z4, string $sys01z4, string $ent10z4): array
+    {
+        $result = ['file' => '', 'filesize' => 0];
+        $listdb = [];
+        $maxsize = 500;
+
+        // Department filter
+        $depFilter = '';
+        if ($dev01->dev0103 ?? '') {
+            $depFilter = sprintf(" and fmd0102 in (%s)", $depId);
+        }
+
+        // Query forms (fmd01)
+        if (!empty($fmd01z4)) {
+            $sql = sprintf("select fmd0101,fmd0102,fmd0103,fmd0104,fmd0105,fmd0107,fmd0108,fmd0110,if(fmd01z4 is null,fmd01z2,fmd01z4) as fmd01z4
+                            from fmd01,ent10
+                            where fmd0102=ent1001 and fmd0108 in (2,3,4)
+                            and ent1002=%s %s and (fmd01z2>'%s' or fmd01z4>'%s') order by fmd0103,fmd0102", $ent10->ent1002, $depFilter, $fmd01z4, $fmd01z4);
+        } else {
+            $sql = sprintf("select fmd0101,fmd0102,fmd0103,fmd0104,fmd0105,fmd0107,fmd0108,fmd0110,if(fmd01z4 is null,fmd01z2,fmd01z4) as fmd01z4
+                            from fmd01,ent10
+                            where fmd0102=ent1001 and fmd0108 in (2,3,4) and ent1002=%s %s order by fmd0103,fmd0102", $ent10->ent1002, $depFilter);
+        }
+        $fmd01s = $this->db->query($sql)->getResult();
+
+        $path = sprintf("data/temp/%s_%s.zip", $dev01->dev0101, date("YmdHis"));
+        $zipfile = FCPATH . $path;
+        $zip = new \ZipArchive();
+        $zip->open($zipfile, \ZipArchive::CREATE);
+
+        if ($fmd01s && count($fmd01s)) {
+            foreach ($fmd01s as $v1) {
+                $files = [];
+
+                if ($v1->fmd0108 != 2) {
+                    // Delete form
+                    $sqlStr = sprintf('delete from fmd01 where fmd0101=%s;delete from fmd02 where fmd0202=%s;delete from fmd03 where fmd0302=%s;delete from fmd04 where fmd0402=%s;delete from fmd05 where fmd0502=%s;delete from fmd06 where fmd0602=%s;delete from fmd07 where fmd0702=%s;delete from fmd08 where fmd0802=%s;delete from fmd09 where fmd0902=%s', $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101, $v1->fmd0101);
+                    $filename = sprintf('cache/fmd0101_%s.txt', $v1->fmd0101);
+                    $zip->addFromString($filename, $sqlStr);
+                    $files[] = $filename;
+                } else {
+                    // fmd02
+                    $fmd02s = $this->db->query(sprintf("select fmd0201,fmd0202,fmd0203,fmd0204,fmd0205,fmd0206 from fmd02 where fmd0202=%s", $v1->fmd0101))->getResult();
+                    if ($fmd02s && count($fmd02s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd02s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd02 (fmd0201,fmd0202,fmd0203,fmd0204,fmd0205,fmd0206) values ';
+                            $tmp = array_slice($fmd02s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,%s,'%s','%s','%s'),", $v2->fmd0201, $v2->fmd0202, $v2->fmd0203, $v2->fmd0204, $v2->fmd0205, $v2->fmd0206);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd02_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd03
+                    $fmd03s = $this->db->query(sprintf("select fmd0301,fmd0302,fmd0304 from fmd03 where fmd0302=%s", $v1->fmd0101))->getResult();
+                    if ($fmd03s && count($fmd03s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd03s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd03 (fmd0301,fmd0302,fmd0304) values ';
+                            $tmp = array_slice($fmd03s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s'),", $v2->fmd0301, $v2->fmd0302, $v2->fmd0304);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd03_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd04
+                    $fmd04s = $this->db->query(sprintf("select fmd0401,fmd0402,fmd0403,fmd0404,fmd0405,fmd0409 from fmd04 where fmd0402=%s", $v1->fmd0101))->getResult();
+                    if ($fmd04s && count($fmd04s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd04s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd04 (fmd0401,fmd0402,fmd0403,fmd0404,fmd0405,fmd0409) values ';
+                            $tmp = array_slice($fmd04s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s','%s','%s','%s'),", $v2->fmd0401, $v2->fmd0402, $v2->fmd0403, $v2->fmd0404, $v2->fmd0405, $v2->fmd0409);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd04_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd05
+                    $fmd05s = $this->db->query(sprintf("select fmd0501,fmd0502,fmd0503,fmd0504 from fmd05 where fmd0502=%s", $v1->fmd0101))->getResult();
+                    if ($fmd05s && count($fmd05s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd05s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd05 (fmd0501,fmd0502,fmd0503,fmd0504) values ';
+                            $tmp = array_slice($fmd05s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s','%s'),", $v2->fmd0501, $v2->fmd0502, $v2->fmd0503, $v2->fmd0504);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd05_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd06
+                    $fmd06s = $this->db->query(sprintf("select fmd0601,fmd0602,fmd0603,fmd0604,fmd0606,fmd0607,fmd0608,fmd0609,fmd0610,fmd0611,fmd0612,fmd0613,fmd0614,fmd0616,fmd0618,fmd0619 from fmd06 where fmd0602=%s", $v1->fmd0101))->getResult();
+                    if ($fmd06s && count($fmd06s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd06s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd06 (fmd0601,fmd0602,fmd0603,fmd0604,fmd0606,fmd0607,fmd0608,fmd0609,fmd0610,fmd0611,fmd0612,fmd0613,fmd0614,fmd0616,fmd0618,fmd0619) values ';
+                            $tmp = array_slice($fmd06s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,%s,%s,'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s',%s),", $v2->fmd0601, $v2->fmd0602, $v2->fmd0603, $v2->fmd0604, $v2->fmd0606, $v2->fmd0607, $v2->fmd0608, $v2->fmd0609, $v2->fmd0610, $v2->fmd0611, $v2->fmd0612, $v2->fmd0613, $v2->fmd0614, $v2->fmd0616, $v2->fmd0618, $v2->fmd0619);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd06_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd07
+                    $fmd07s = $this->db->query(sprintf("select fmd0701,fmd0702,fmd0703,fmd0704,fmd0706,fmd0708 from fmd07 where fmd0702=%s", $v1->fmd0101))->getResult();
+                    if ($fmd07s && count($fmd07s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd07s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd07 (fmd0701,fmd0702,fmd0703,fmd0704,fmd0706,fmd0708) values ';
+                            $tmp = array_slice($fmd07s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s','%s','%s','%s'),", $v2->fmd0701, $v2->fmd0702, $v2->fmd0703, $v2->fmd0704, $v2->fmd0706, $v2->fmd0708);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd07_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd08
+                    $fmd08s = $this->db->query(sprintf("select fmd0801,fmd0802,fmd0803,fmd0804,fmd0805 from fmd08 where fmd0802=%s", $v1->fmd0101))->getResult();
+                    if ($fmd08s && count($fmd08s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd08s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd08 (fmd0801,fmd0802,fmd0803,fmd0804,fmd0805) values ';
+                            $tmp = array_slice($fmd08s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s','%s','%s'),", $v2->fmd0801, $v2->fmd0802, $v2->fmd0803, $v2->fmd0804, $v2->fmd0805);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd08_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd09
+                    $fmd09s = $this->db->query(sprintf("select fmd0901,fmd0902,fmd0903,fmd0904,fmd0905,fmd0906,fmd0908,fmd0909,fmd0910,fmd0911 from fmd09 where fmd0902=%s", $v1->fmd0101))->getResult();
+                    if ($fmd09s && count($fmd09s)) {
+                        $index = 0;
+                        for ($i = 0; $i < count($fmd09s); $i += $maxsize) {
+                            $sqlStr = 'insert into fmd09 (fmd0901,fmd0902,fmd0903,fmd0904,fmd0905,fmd0908,fmd0909,fmd0910,fmd0911,fmd0906) values ';
+                            $tmp = array_slice($fmd09s, $i, $maxsize);
+                            foreach ($tmp as $v2) {
+                                $sqlStr .= sprintf("(%s,%s,'%s','%s','%s','%s','%s','%s','%s','%s'),", $v2->fmd0901, $v2->fmd0902, $v2->fmd0903, $v2->fmd0904, $v2->fmd0905, $v2->fmd0908, $v2->fmd0909, $v2->fmd0910, $v2->fmd0911, $v2->fmd0906);
+                            }
+                            $sqlStr = rtrim($sqlStr, ",") . ";";
+                            $filename = sprintf('cache/fmd09_%s_%s.txt', $v1->fmd0101, $index);
+                            $zip->addFromString($filename, $sqlStr);
+                            $files[] = $filename;
+                            $index++;
+                        }
+                    }
+
+                    // fmd01 record itself
+                    $filename = sprintf('cache/fmd0101_%s.txt', $v1->fmd0101);
+                    $sqlStr = sprintf("insert into fmd01 (fmd0101,fmd0102,fmd0103,fmd0104,fmd0105,fmd0107,fmd0108,fmd0110,fmd01z4) values (%s,%s,'%s','%s',%s,%s,%s,%s,'%s');", $v1->fmd0101, $v1->fmd0102, $v1->fmd0103, $v1->fmd0104, $v1->fmd0105, $v1->fmd0107, $v1->fmd0108, $v1->fmd0110, $v1->fmd01z4);
+                    $zip->addFromString($filename, $sqlStr);
+                    $files[] = $filename;
+                }
+
+                $listdb[] = ['title' => $v1->fmd0104 . '_V' . $v1->fmd0107, 'files' => $files];
+            }
+        }
+
+        // fmd10 - Notification schedules
+        if (!empty($fmd10z4)) {
+            $sql = sprintf("select fmd1001,fmd1002,fmd1003,fmd1004,fmd1005,fmd1006,fmd1007,fmd1008,fmd1009,fmd1010,fmd1011,fmd1012,if(fmd10z4 is null,fmd10z2,fmd10z4) as fmd10z4 from fmd10 where fmd1012=%s and (fmd10z2>'%s' or fmd10z4>'%s')", $ent10->ent1002, $fmd10z4, $fmd10z4);
+        } else {
+            $sql = sprintf("select fmd1001,fmd1002,fmd1003,fmd1004,fmd1005,fmd1006,fmd1007,fmd1008,fmd1009,fmd1010,fmd1011,fmd1012,if(fmd10z4 is null,fmd10z2,fmd10z4) as fmd10z4 from fmd10 where fmd1012=%s", $ent10->ent1002);
+        }
+        $fmd10s = $this->db->query($sql)->getResult();
+        if ($fmd10s && count($fmd10s)) {
+            $sqlStr = 'insert into fmd10 (fmd1001,fmd1002,fmd1003,fmd1004,fmd1005,fmd1006,fmd1007,fmd1008,fmd1009,fmd1010,fmd1011,fmd1012,fmd10z4) values ';
+            $delid = [];
+            foreach ($fmd10s as $v1) {
+                $delid[] = $v1->fmd1001;
+                if ($v1->fmd1010 == 1) {
+                    $sqlStr .= sprintf("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'),", $v1->fmd1001, $v1->fmd1002, $v1->fmd1003, $v1->fmd1004, $v1->fmd1005, $v1->fmd1006, $v1->fmd1007, $v1->fmd1008, $v1->fmd1009, $v1->fmd1010, $v1->fmd1011, $v1->fmd1012, $v1->fmd10z4);
+                }
+            }
+            $sqlStr = rtrim($sqlStr, ",") . ";";
+
+            $filename1 = 'cache/fmd10_delete.txt';
+            $zip->addFromString($filename1, sprintf("delete from fmd10 where fmd1001 in (%s);", implode(",", $delid)));
+
+            $filename2 = 'cache/fmd10.txt';
+            $zip->addFromString($filename2, $sqlStr);
+            $listdb[] = ['title' => lang('Webapi.table_fmd10'), 'files' => [$filename1, $filename2]];
+        }
+
+        // sys01 - User accounts
+        if (!empty($sys01z4)) {
+            $sql = sprintf("select sys0101,sys0102,sys0103,sys0104,sys0105,sys0106,sys0107,sys0108,sys0110,sys0111,sys0117,sys0121,if(sys01z4 is null,sys01z2,sys01z4) as sys01z4 from sys01,ent10 where sys0110=ent1001 and ent1002=%s and (sys01z2>'%s' or sys01z4>'%s')", $ent10->ent1002, $sys01z4, $sys01z4);
+        } else {
+            $sql = sprintf("select sys0101,sys0102,sys0103,sys0104,sys0105,sys0106,sys0107,sys0108,sys0110,sys0111,sys0117,sys0121,if(sys01z4 is null,sys01z2,sys01z4) as sys01z4 from sys01,ent10 where sys0110=ent1001 and ent1002=%s", $ent10->ent1002);
+        }
+        $sys01s = $this->db->query($sql)->getResult();
+        if ($sys01s && count($sys01s)) {
+            $sqlStr = 'insert into sys01 (sys0101,sys0102,sys0103,sys0104,sys0105,sys0106,sys0107,sys0108,sys0110,sys0111,sys0117,sys0121,sys01z4) values ';
+            $delid = [];
+            foreach ($sys01s as $v1) {
+                $delid[] = $v1->sys0101;
+                $sqlStr .= sprintf("('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'),", $v1->sys0101, $v1->sys0102, $v1->sys0103, $v1->sys0104, $v1->sys0105, $v1->sys0106, $v1->sys0107, $v1->sys0108, $v1->sys0110, $v1->sys0111, $v1->sys0117, $v1->sys0121, $v1->sys01z4);
+            }
+            $sqlStr = rtrim($sqlStr, ",") . ";";
+
+            $filename1 = 'cache/sys01_delete.txt';
+            $zip->addFromString($filename1, sprintf("delete from sys01 where sys0101 in (%s);", implode(",", $delid)));
+
+            $filename2 = 'cache/sys01.txt';
+            $zip->addFromString($filename2, $sqlStr);
+            $listdb[] = ['title' => lang('Webapi.table_sys01'), 'files' => [$filename1, $filename2]];
+        }
+
+        // ent10 - Departments
+        if (!empty($ent10z4)) {
+            $sql = sprintf("select ent1001,ent1002,ent1004,ent1005,ent1007,if(ent10z4 is null,ent10z2,ent10z4) as ent10z4 from ent10 where ent1002=%s and (ent10z2>'%s' or ent10z4>'%s')", $ent10->ent1002, $ent10z4, $ent10z4);
+        } else {
+            $sql = sprintf("select ent1001,ent1002,ent1004,ent1005,ent1007,if(ent10z4 is null,ent10z2,ent10z4) as ent10z4 from ent10 where ent1002=%s", $ent10->ent1002);
+        }
+        $ent10s = $this->db->query($sql)->getResult();
+        if ($ent10s && count($ent10s)) {
+            $sqlStr = 'insert into ent10 (ent1001,ent1002,ent1004,ent1005,ent1007,ent10z4) values ';
+            $delid = [];
+            foreach ($ent10s as $v1) {
+                $delid[] = $v1->ent1001;
+                $sqlStr .= sprintf("('%s','%s','%s','%s','%s','%s'),", $v1->ent1001, $v1->ent1002, $v1->ent1004, $v1->ent1005, $v1->ent1007, $v1->ent10z4);
+            }
+            $sqlStr = rtrim($sqlStr, ",") . ";";
+
+            $filename1 = 'cache/ent10_delete.txt';
+            $zip->addFromString($filename1, sprintf("delete from ent10 where ent1001 in (%s);", implode(",", $delid)));
+
+            $filename2 = 'cache/ent10.txt';
+            $zip->addFromString($filename2, $sqlStr);
+            $listdb[] = ['title' => lang('Webapi.table_ent10'), 'files' => [$filename1, $filename2]];
+        }
+
+        $zip->addFromString('cache/00000.txt', json_encode($listdb));
+        $zip->close();
+
+        if (count($listdb)) {
+            $result['file'] = $path;
+            $result['filesize'] = filesize($zipfile);
+        } else {
+            if (file_exists($zipfile)) {
+                unlink($zipfile);
+            }
+        }
+
+        return $result;
     }
 
     public function logout(): \CodeIgniter\HTTP\ResponseInterface

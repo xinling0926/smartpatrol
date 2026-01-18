@@ -1847,94 +1847,139 @@ class Webapi extends BaseController
      */
     public function photograph(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $pad07Model = model('Pad07Model');
-        $json = ['status' => 'fail', 'info' => lang('Webapi.upload_fail')];
+        log_message('debug', '[Webapi] photograph - START');
 
-        $pad0707 = trim($this->request->getPost('pad0707') ?? '');
-        $dev0101 = (int)($this->request->getPost('dev0101') ?? 0);
-        $dev0105 = trim($this->request->getPost('dev0105') ?? '');
-        $imei = trim($this->request->getPost('os_imei') ?? '');
+        try {
+            $pad07Model = model('Pad07Model');
+            $json = ['status' => 'fail', 'info' => lang('Webapi.upload_fail')];
 
-        $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
-        if (!$dev01s || count($dev01s) === 0) {
-            $json['info'] = lang('Webapi.dev01_not_exists');
-            $json['dev0101'] = $dev0101;
-            $json['dev0105'] = $dev0105;
-        } elseif ((int)$dev01s[0]->dev0106 !== 1) {
-            $json['info'] = lang('Webapi.dev01_not_enable');
-        } elseif ((int)$dev01s[0]->ent0104 !== 1) {
-            $json['info'] = lang('Webapi.ent10_not_enable');
-        } elseif (empty($pad0707) || !json_encode($pad0707)) {
-            $json['info'] = lang('Webapi.json_error');
-        } else {
-            $dev01 = $dev01s[0];
+            $pad0707 = trim($this->request->getPost('pad0707') ?? '');
+            $dev0101 = (int)($this->request->getPost('dev0101') ?? 0);
+            $dev0105 = trim($this->request->getPost('dev0105') ?? '');
+            $imei = trim($this->request->getPost('os_imei') ?? '');
 
-            if (empty($dev01->dev0112) && !empty($imei)) {
-                $this->dev01Model->update($dev01->dev0101, ['dev0112' => $imei]);
-            }
+            log_message('debug', '[Webapi] photograph - params: dev0101=' . $dev0101 . ', dev0105=' . $dev0105 . ', pad0707=' . $pad0707);
 
-            $pad07Data = [
-                'pad0702' => (int)($this->request->getPost('pad0702') ?? 0),
-                'pad0703' => $dev0101,
-                'pad0704' => (int)($this->request->getPost('pad0704') ?? 0),
-                'pad0705' => $this->request->getPost('pad0705') ?? '',
-                'pad0706' => $this->request->getPost('pad0706') ?? '',
-                'pad0707' => $pad0707,
-                'pad0708' => date('Y-m-d H:i:s'),
-            ];
+            $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
+            log_message('debug', '[Webapi] photograph - dev01s count: ' . ($dev01s ? count($dev01s) : 0));
 
-            // 檢查重複
-            $existingPad07 = $this->db->query(
-                "select * from pad07 where pad0702=? and pad0703=? and pad0704=? and pad0706 like ? and pad0707=STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s')",
-                [$pad07Data['pad0702'], $pad07Data['pad0703'], $pad07Data['pad0704'], '%' . $pad07Data['pad0706'] . '%', $pad07Data['pad0707']]
-            )->getRow();
-
-            if ($existingPad07) {
-                $json['status'] = 'success';
-                $json['info'] = lang('Webapi.upload_success');
-                $json['pad0701'] = $existingPad07->pad0701;
-                $json['pad0708'] = $existingPad07->pad0708;
+            if (!$dev01s || count($dev01s) === 0) {
+                log_message('debug', '[Webapi] photograph - device not found');
+                $json['info'] = lang('Webapi.dev01_not_exists');
+                $json['dev0101'] = $dev0101;
+                $json['dev0105'] = $dev0105;
+            } elseif ((int)$dev01s[0]->dev0106 !== 1) {
+                log_message('debug', '[Webapi] photograph - device not enabled, dev0106=' . $dev01s[0]->dev0106);
+                $json['info'] = lang('Webapi.dev01_not_enable');
+            } elseif ((int)$dev01s[0]->ent0104 !== 1) {
+                log_message('debug', '[Webapi] photograph - enterprise not enabled, ent0104=' . $dev01s[0]->ent0104);
+                $json['info'] = lang('Webapi.ent10_not_enable');
+            } elseif (empty($pad0707)) {
+                log_message('debug', '[Webapi] photograph - pad0707 is empty');
+                $json['info'] = lang('Webapi.json_error');
             } else {
-                $year = date('Y');
-                $month = date('m');
-                $day = date('d');
-                $photoBase = FCPATH . 'data/photograph/' . $year . '/' . $month . '/' . $day . '/' . $pad07Data['pad0703'];
+                $dev01 = $dev01s[0];
+                log_message('debug', '[Webapi] photograph - device validated, proceeding');
 
-                if (!file_exists($photoBase) && !mkdir($photoBase, 0777, true)) {
-                    $json['info'] = lang('Webapi.mkdir_fail');
-                    return $this->response->setJSON($json);
+                if (empty($dev01->dev0112) && !empty($imei)) {
+                    $this->dev01Model->update($dev01->dev0101, ['dev0112' => $imei]);
+                    log_message('debug', '[Webapi] photograph - updated dev0112');
                 }
 
-                $pad0701 = $pad07Model->insert($pad07Data);
-                if ($pad0701) {
-                    $files = $this->request->getFiles();
-                    foreach ($files as $file) {
-                        if (!$file->isValid() || $file->hasMoved()) {
-                            continue;
-                        }
-                        $ext = strtolower($file->getExtension());
-                        if (!in_array($ext, ['jpg', 'png'])) {
-                            continue;
-                        }
-                        $fileName = $file->getName();
-                        $pad0706 = sprintf('%s/%s', $photoBase, $fileName);
-                        $file->move($photoBase, $fileName);
-                        $pad07Model->update($pad0701, ['pad0706' => $pad0706]);
-                        break; // 只允許傳一張照片
-                    }
+                $pad07Data = [
+                    'pad0702' => (int)($this->request->getPost('pad0702') ?? 0),
+                    'pad0703' => $dev0101,
+                    'pad0704' => (int)($this->request->getPost('pad0704') ?? 0),
+                    'pad0705' => $this->request->getPost('pad0705') ?? '',
+                    'pad0706' => $this->request->getPost('pad0706') ?? '',
+                    'pad0707' => $pad0707,
+                    'pad0708' => date('Y-m-d H:i:s'),
+                ];
+                log_message('debug', '[Webapi] photograph - pad07Data: ' . json_encode($pad07Data));
 
+                // 檢查重複
+                $existingPad07 = $this->db->query(
+                    "select * from pad07 where pad0702=? and pad0703=? and pad0704=? and pad0706 like ? and pad0707=STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s')",
+                    [$pad07Data['pad0702'], $pad07Data['pad0703'], $pad07Data['pad0704'], '%' . $pad07Data['pad0706'] . '%', $pad07Data['pad0707']]
+                )->getRow();
+                log_message('debug', '[Webapi] photograph - duplicate check: ' . ($existingPad07 ? 'found' : 'not found'));
+
+                if ($existingPad07) {
                     $json['status'] = 'success';
                     $json['info'] = lang('Webapi.upload_success');
-                    $json['pad0701'] = $pad0701;
-                    $json['pad0708'] = $pad07Data['pad0708'];
+                    $json['pad0701'] = $existingPad07->pad0701;
+                    $json['pad0708'] = $existingPad07->pad0708;
+                    log_message('debug', '[Webapi] photograph - returning existing record');
                 } else {
-                    $json['info'] = lang('Webapi.write_fail');
+                    $year = date('Y');
+                    $month = date('m');
+                    $day = date('d');
+                    $photoBase = FCPATH . 'data/photograph/' . $year . '/' . $month . '/' . $day . '/' . $pad07Data['pad0703'];
+                    log_message('debug', '[Webapi] photograph - photoBase: ' . $photoBase);
+
+                    if (!file_exists($photoBase) && !mkdir($photoBase, 0777, true)) {
+                        log_message('error', '[Webapi] photograph - mkdir failed: ' . $photoBase);
+                        $json['info'] = lang('Webapi.mkdir_fail');
+                        return $this->response->setJSON($json);
+                    }
+                    log_message('debug', '[Webapi] photograph - directory ready');
+
+                    $pad0701 = $pad07Model->insert($pad07Data);
+                    log_message('debug', '[Webapi] photograph - insert result: ' . ($pad0701 ?: 'false'));
+
+                    if ($pad0701) {
+                        $files = $this->request->getFiles();
+                        log_message('debug', '[Webapi] photograph - files count: ' . count($files));
+
+                        foreach ($files as $name => $file) {
+                            log_message('debug', '[Webapi] photograph - processing file: ' . $name);
+                            if (!$file->isValid()) {
+                                log_message('debug', '[Webapi] photograph - file not valid: ' . $file->getErrorString());
+                                continue;
+                            }
+                            if ($file->hasMoved()) {
+                                log_message('debug', '[Webapi] photograph - file already moved');
+                                continue;
+                            }
+                            $ext = strtolower($file->getExtension());
+                            log_message('debug', '[Webapi] photograph - file extension: ' . $ext);
+                            if (!in_array($ext, ['jpg', 'png'])) {
+                                log_message('debug', '[Webapi] photograph - invalid extension');
+                                continue;
+                            }
+                            $fileName = $file->getName();
+                            $pad0706 = sprintf('%s/%s', $photoBase, $fileName);
+                            log_message('debug', '[Webapi] photograph - moving file to: ' . $pad0706);
+                            $file->move($photoBase, $fileName);
+                            $pad07Model->update($pad0701, ['pad0706' => $pad0706]);
+                            log_message('debug', '[Webapi] photograph - file moved and updated');
+                            break; // 只允許傳一張照片
+                        }
+
+                        $json['status'] = 'success';
+                        $json['info'] = lang('Webapi.upload_success');
+                        $json['pad0701'] = $pad0701;
+                        $json['pad0708'] = $pad07Data['pad0708'];
+                        log_message('debug', '[Webapi] photograph - success');
+                    } else {
+                        log_message('error', '[Webapi] photograph - insert failed');
+                        $json['info'] = lang('Webapi.write_fail');
+                    }
                 }
+
+                $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
             }
 
-            $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
-        }
+            log_message('debug', '[Webapi] photograph - END, response: ' . json_encode($json));
+            return $this->response->setJSON($json);
 
-        return $this->response->setJSON($json);
+        } catch (\Exception $e) {
+            log_message('error', '[Webapi] photograph - Exception: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->response->setJSON([
+                'status' => 'fail',
+                'info' => lang('Webapi.upload_fail'),
+                'debug' => $e->getMessage()
+            ]);
+        }
     }
 }

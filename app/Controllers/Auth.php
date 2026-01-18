@@ -38,14 +38,24 @@ class Auth extends BaseController
         $this->data['identity_column'] = $identityColumn;
 
         if ($this->request->is('post')) {
+            $identityLabel = lang('Auth.f_' . $identityColumn);
             $rules = [
-                'identity' => 'required',
-                'password' => 'required',
+                'identity' => [
+                    'label' => $identityLabel,
+                    'rules' => 'required',
+                ],
+                'password' => [
+                    'label' => lang('Auth.f_sys0105'),
+                    'rules' => 'required',
+                ],
             ];
 
             // Check if security code is required
             if ($useSecCode === true) {
-                $rules['sec_code'] = 'required';
+                $rules['sec_code'] = [
+                    'label' => lang('Auth.sec_code'),
+                    'rules' => 'required',
+                ];
             }
 
             if ($this->validate($rules)) {
@@ -107,7 +117,10 @@ class Auth extends BaseController
         $identityLabel = lang('Auth.f_' . $this->user->identityColumn);
 
         $rules = [
-            'identity' => 'required',
+            'identity' => [
+                'label' => $identityLabel,
+                'rules' => 'required',
+            ],
         ];
 
         if (!$this->request->is('post') || !$this->validate($rules)) {
@@ -140,8 +153,14 @@ class Auth extends BaseController
             $maxLength = $rbacConfig->maxPasswordLength ?? 20;
 
             $rules = [
-                'new' => "required|min_length[{$minLength}]|max_length[{$maxLength}]|matches[new_confirm]",
-                'new_confirm' => 'required',
+                'new' => [
+                    'label' => lang('Auth.reset_password_new_password_label'),
+                    'rules' => "required|min_length[{$minLength}]|max_length[{$maxLength}]|matches[new_confirm]",
+                ],
+                'new_confirm' => [
+                    'label' => lang('Auth.reset_password_new_password_confirm_label'),
+                    'rules' => 'required',
+                ],
             ];
 
             if (!$this->request->is('post') || !$this->validate($rules)) {

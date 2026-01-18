@@ -1,9 +1,9 @@
-<?=$site_title?>
+<?= $site_title ?>
 
-<?=sprintf(lang('email_lock_notify_body_1'),$user_name)?>
+<?= sprintf(lang('Auth.email_lock_notify_body_1'), $user_name) ?>
 
 <?= $reset_password_url ?>
 
-<?=lang('email_lock_notify_body_2')?>
+<?= lang('Auth.email_lock_notify_body_2') ?>
 
-<?=now()?>
+<?= now() ?>

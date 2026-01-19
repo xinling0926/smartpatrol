@@ -58,7 +58,9 @@ return [
     'write_fail' => '資料寫入失敗',
     'data_exists' => '資料已存在',
     'data_empty' => '數據為空',
-    'zip_cannot_open' => '壓縮檔無法打開據為空',
+    'zip_cannot_open' => '壓縮檔無法打開',
+    'zip_open_fail' => '無法開啟壓縮檔',
+    'data_file_not_found' => '壓縮檔內找不到 data.txt',
 
     'table_fmd10' => '通知排程',
     'table_sys01' => '帳號',

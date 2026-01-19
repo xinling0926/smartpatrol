@@ -214,9 +214,10 @@
 		function getdata(chart,url){
 			$.ajax({
                 url: url,
+                dataType: 'json',
                 success: function(data){
 					chart.data.labels=['信義', '寶慶', '板橋', '新站', '桃園', '新竹', '台中', '嘉義', '台南(成功)', '台南(公園)', '高雄', '花蓮'];
-	                chart.data.datasets=JSON.parse(data);
+	                chart.data.datasets = data;
                     chart.update();
                 },
             });

@@ -906,6 +906,9 @@ class Webapi extends BaseController
      */
     public function addpad01multi(): \CodeIgniter\HTTP\ResponseInterface
     {
+        // 開始輸出緩衝，防止任何意外輸出
+        ob_start();
+
         log_message('info', '[Webapi] addpad01multi start');
         $pad01Model = model('Pad01Model');
         $time = time();
@@ -955,68 +958,124 @@ class Webapi extends BaseController
         $zipfile = sprintf('%s/%s_%s.zip', $zipPath, $dev0101, $time);
         $file->move($zipPath, basename($zipfile));
 
+        log_message('info', '[Webapi] addpad01multi - ZIP file saved: ' . $zipfile);
+
         // 解壓縮並處理
         $zip = new \ZipArchive();
-        if ($zip->open($zipfile) === true) {
-            $extractPath = FCPATH . 'data/pad0203/' . $dev01->dev0101;
-            if (!file_exists($extractPath) && !mkdir($extractPath, 0777, true)) {
-                $json['info'] = lang('Webapi.mkdir_fail');
-                return $this->jsonResponse($json);
-            }
+        $zipResult = $zip->open($zipfile);
 
-            $zip->extractTo($extractPath);
-
-            // 處理 data.txt
-            $dataFile = $extractPath . '/data.txt';
-            if (file_exists($dataFile)) {
-                $dataContent = file_get_contents($dataFile);
-                $records = json_decode($dataContent, true);
-
-                if ($records) {
-                    $successCount = 0;
-                    foreach ($records as $record) {
-                        $pad01 = [
-                            'pad0102' => (int)($record['pad0102'] ?? 0),
-                            'pad0103' => $dev0101,
-                            'pad0104' => (int)($record['pad0104'] ?? 0),
-                            'pad0105' => (int)($record['pad0105'] ?? 0),
-                            'pad0106' => (int)($record['pad0106'] ?? 0),
-                            'pad0107' => $record['pad0107'] ?? '',
-                            'pad0108' => $record['pad0108'] ?? '',
-                            'pad0109' => $record['pad0109'] ?? '',
-                            'pad0110' => (float)($record['pad0110'] ?? 0),
-                            'pad0111' => (float)($record['pad0111'] ?? 0),
-                            'pad0112' => date('Y-m-d H:i:s'),
-                            'pad0113' => 1,
-                        ];
-
-                        // 檢查重複
-                        $exists = $this->db->query(
-                            "select pad0101 from pad01 where pad0102=? and pad0103=? and pad0104=? and pad0109=?",
-                            [$pad01['pad0102'], $pad01['pad0103'], $pad01['pad0104'], $pad01['pad0109']]
-                        )->getRow();
-
-                        if (!$exists) {
-                            $pad0101 = $pad01Model->insert($pad01);
-                            if ($pad0101) {
-                                $successCount++;
-                                $this->sendPAD01ToAPI($pad0101, $api);
-                            }
-                        }
-                    }
-
-                    $json['status'] = 'success';
-                    $json['info'] = sprintf(lang('Webapi.upload_multi_success'), $successCount);
-                }
-
-                unlink($dataFile);
-            }
-
-            $zip->close();
+        if ($zipResult !== true) {
+            // ZIP 開啟失敗，記錄錯誤碼
+            $zipErrors = [
+                \ZipArchive::ER_EXISTS => 'File already exists',
+                \ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+                \ZipArchive::ER_INVAL => 'Invalid argument',
+                \ZipArchive::ER_MEMORY => 'Memory allocation failure',
+                \ZipArchive::ER_NOENT => 'No such file',
+                \ZipArchive::ER_NOZIP => 'Not a zip archive',
+                \ZipArchive::ER_OPEN => 'Cannot open file',
+                \ZipArchive::ER_READ => 'Read error',
+                \ZipArchive::ER_SEEK => 'Seek error',
+            ];
+            $errorMsg = $zipErrors[$zipResult] ?? "Unknown error code: {$zipResult}";
+            log_message('error', '[Webapi] addpad01multi - ZIP open failed: ' . $errorMsg);
+            $json['info'] = lang('Webapi.zip_open_fail') . " ({$errorMsg})";
+            ob_end_clean();
+            return $this->jsonResponse($json);
         }
 
+        $extractPath = FCPATH . 'data/pad0203/' . $dev01->dev0101;
+        if (!file_exists($extractPath) && !mkdir($extractPath, 0777, true)) {
+            $json['info'] = lang('Webapi.mkdir_fail');
+            $zip->close();
+            ob_end_clean();
+            return $this->jsonResponse($json);
+        }
+
+        $zip->extractTo($extractPath);
+        log_message('info', '[Webapi] addpad01multi - ZIP extracted to: ' . $extractPath);
+
+        // 處理 data.txt
+        $dataFile = $extractPath . '/data.txt';
+        if (!file_exists($dataFile)) {
+            log_message('error', '[Webapi] addpad01multi - data.txt not found in ZIP');
+            $json['info'] = lang('Webapi.data_file_not_found');
+            $zip->close();
+            ob_end_clean();
+            return $this->jsonResponse($json);
+        }
+
+        $dataContent = file_get_contents($dataFile);
+        $records = json_decode($dataContent, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            log_message('error', '[Webapi] addpad01multi - JSON parse error: ' . json_last_error_msg());
+            $json['info'] = lang('Webapi.json_error') . ' (' . json_last_error_msg() . ')';
+            $zip->close();
+            unlink($dataFile);
+            ob_end_clean();
+            return $this->jsonResponse($json);
+        }
+
+        if (empty($records)) {
+            log_message('warning', '[Webapi] addpad01multi - No records in data.txt');
+            $json['status'] = 'success';
+            $json['info'] = sprintf(lang('Webapi.upload_multi_success'), 0);
+            $zip->close();
+            unlink($dataFile);
+            ob_end_clean();
+            return $this->jsonResponse($json);
+        }
+
+        log_message('info', '[Webapi] addpad01multi - Processing ' . count($records) . ' records');
+
+        $successCount = 0;
+        foreach ($records as $record) {
+            $pad01 = [
+                'pad0102' => (int)($record['pad0102'] ?? 0),
+                'pad0103' => $dev0101,
+                'pad0104' => (int)($record['pad0104'] ?? 0),
+                'pad0105' => (int)($record['pad0105'] ?? 0),
+                'pad0106' => (int)($record['pad0106'] ?? 0),
+                'pad0107' => $record['pad0107'] ?? '',
+                'pad0108' => $record['pad0108'] ?? '',
+                'pad0109' => $record['pad0109'] ?? '',
+                'pad0110' => (float)($record['pad0110'] ?? 0),
+                'pad0111' => (float)($record['pad0111'] ?? 0),
+                'pad0112' => date('Y-m-d H:i:s'),
+                'pad0113' => 1,
+            ];
+
+            // 檢查重複
+            $exists = $this->db->query(
+                "select pad0101 from pad01 where pad0102=? and pad0103=? and pad0104=? and pad0109=?",
+                [$pad01['pad0102'], $pad01['pad0103'], $pad01['pad0104'], $pad01['pad0109']]
+            )->getRow();
+
+            if (!$exists) {
+                $pad0101 = $pad01Model->insert($pad01);
+                if ($pad0101) {
+                    $successCount++;
+                    $this->sendPAD01ToAPI($pad0101, $api);
+                }
+            }
+        }
+
+        $json['status'] = 'success';
+        $json['info'] = sprintf(lang('Webapi.upload_multi_success'), $successCount);
+
+        unlink($dataFile);
+        $zip->close();
+
         $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
-        log_message('info', '[Webapi] addpad01multi end');
+
+        // 檢查是否有任何意外輸出
+        $unexpectedOutput = ob_get_clean();
+        if (!empty($unexpectedOutput)) {
+            log_message('warning', '[Webapi] addpad01multi - unexpected output: ' . $unexpectedOutput);
+        }
+
+        log_message('info', '[Webapi] addpad01multi end - response: ' . json_encode($json));
 
         return $this->jsonResponse($json);
     }

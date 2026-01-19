@@ -57,8 +57,10 @@ return [
     'json_format_error' => '不是有效的JSON資料',
     'write_fail' => '資料寫入失敗',
     'data_exists' => '資料已存在',
-    'data_empty' => '數據為空',
-    'zip_cannot_open' => '壓縮檔無法打開據為空',
+    'data_empty' => '数据为空',
+    'zip_cannot_open' => '压缩档无法打开',
+    'zip_open_fail' => '无法开启压缩档',
+    'data_file_not_found' => '压缩档内找不到 data.txt',
 
     'table_fmd10' => '通知排程',
     'table_sys01' => '帳號',

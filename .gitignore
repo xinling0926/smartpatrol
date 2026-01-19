@@ -85,6 +85,8 @@ phpunit
 # Composer
 #-------------------------
 vendor/
+# But include vendor directories in public/assets
+!public/assets/**/vendor/
 
 #-------------------------
 # IDE / Development Files

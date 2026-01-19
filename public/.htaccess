@@ -49,16 +49,20 @@ Options -Indexes
 ServerSignature Off
 # Disable server signature end
 
-# Disable chunked transfer encoding for API responses
+# Disable chunked transfer encoding for API responses (Apache + PHP-FPM)
 <IfModule mod_headers.c>
-    # For JSON responses, remove Transfer-Encoding header
     <FilesMatch "\.php$">
         Header unset Transfer-Encoding
     </FilesMatch>
 </IfModule>
 
+# Force mod_proxy to use Content-Length instead of chunked encoding
+# This is critical for Apache + PHP-FPM environments
+SetEnv proxy-sendcl 1
+
 # Force HTTP/1.0 for better compatibility with mobile apps
 <IfModule mod_setenvif.c>
     SetEnvIf Request_URI "^/webapi" downgrade-1.0
     SetEnvIf Request_URI "^/webapi" force-no-vary
+    SetEnvIf Request_URI "^/webapi" proxy-sendcl
 </IfModule>

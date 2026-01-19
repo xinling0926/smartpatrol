@@ -37,27 +37,44 @@ class Webapi extends BaseController
 
     /**
      * 回傳 JSON 響應（完全繞過 CI4 的響應處理，避免 chunked transfer encoding）
-     * 使用 PHP 原生輸出，與 CI3 的 echo json_encode() 相同效果
+     * 針對 Apache + PHP-FPM 環境優化
      */
     private function jsonResponse(array $data): never
     {
         $output = json_encode($data);
+        $length = strlen($output);
 
         // 清除所有輸出緩衝區
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
 
+        // 禁用 Apache mod_deflate 壓縮（會導致 chunked encoding）
+        if (function_exists('apache_setenv')) {
+            apache_setenv('no-gzip', '1');
+        }
+
+        // 設定環境變數禁用 chunked encoding
+        @putenv('no-gzip=1');
+
         // 強制使用 HTTP/1.0 避免 chunked transfer encoding
-        // HTTP/1.0 不支援 chunked encoding，必須使用 Content-Length
         header('HTTP/1.0 200 OK');
         header('Content-Type: application/json; charset=utf-8');
-        header('Content-Length: ' . strlen($output));
+        header('Content-Length: ' . $length);
         header('Connection: close');
         header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('X-Accel-Buffering: no');  // 禁用代理 buffering
 
-        // 直接輸出並終止
+        // 立即輸出
         echo $output;
+
+        // 強制刷新輸出緩衝
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            flush();
+        }
+
         exit;
     }
 

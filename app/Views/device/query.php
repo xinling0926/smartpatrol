@@ -17,8 +17,8 @@
 			<?php foreach ($data as $d) : ?>
 				<?php
 					$serial = '';
-					if ($dev0113s = json_decode($d->dev0113)) {
-						$serial = $dev0113s->serial;
+					if (!empty($d->dev0113) && ($dev0113s = json_decode($d->dev0113))) {
+						$serial = $dev0113s->serial ?? '';
 					}
 				?>
 				<tr>

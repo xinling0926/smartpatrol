@@ -16,7 +16,11 @@
       "Bash(/opt/homebrew/bin/mysql:*)",
       "Bash(readlink:*)",
       "Bash(done)",
-      "Bash(/opt/homebrew/opt/mysql@8.0/bin/mysql:*)"
+      "Bash(/opt/homebrew/opt/mysql@8.0/bin/mysql:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(curl:*)"
     ]
   }
 }

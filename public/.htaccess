@@ -48,3 +48,17 @@ Options -Indexes
 # Disable server signature start
 ServerSignature Off
 # Disable server signature end
+
+# Disable chunked transfer encoding for API responses
+<IfModule mod_headers.c>
+    # For JSON responses, remove Transfer-Encoding header
+    <FilesMatch "\.php$">
+        Header unset Transfer-Encoding
+    </FilesMatch>
+</IfModule>
+
+# Force HTTP/1.0 for better compatibility with mobile apps
+<IfModule mod_setenvif.c>
+    SetEnvIf Request_URI "^/webapi" downgrade-1.0
+    SetEnvIf Request_URI "^/webapi" force-no-vary
+</IfModule>

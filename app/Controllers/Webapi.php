@@ -48,9 +48,13 @@ class Webapi extends BaseController
             ob_end_clean();
         }
 
-        // 設定 HTTP headers
-        header('Content-Type: application/json');
+        // 強制使用 HTTP/1.0 避免 chunked transfer encoding
+        // HTTP/1.0 不支援 chunked encoding，必須使用 Content-Length
+        header('HTTP/1.0 200 OK');
+        header('Content-Type: application/json; charset=utf-8');
         header('Content-Length: ' . strlen($output));
+        header('Connection: close');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
 
         // 直接輸出並終止
         echo $output;

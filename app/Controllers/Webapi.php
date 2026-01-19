@@ -49,32 +49,28 @@ class Webapi extends BaseController
             ob_end_clean();
         }
 
-        // 禁用 Apache mod_deflate 壓縮（會導致 chunked encoding）
+        // 禁用隱式 flush
+        @ini_set('implicit_flush', '0');
+
+        // 禁用 Apache mod_deflate 壓縮
         if (function_exists('apache_setenv')) {
-            apache_setenv('no-gzip', '1');
+            @apache_setenv('no-gzip', '1');
+            @apache_setenv('dont-vary', '1');
         }
 
-        // 設定環境變數禁用 chunked encoding
-        @putenv('no-gzip=1');
+        // 移除可能存在的 Transfer-Encoding header
+        header_remove('Transfer-Encoding');
 
-        // 強制使用 HTTP/1.0 避免 chunked transfer encoding
+        // 設定回應 headers（使用 HTTP/1.0 強制 Content-Length 模式）
         header('HTTP/1.0 200 OK');
         header('Content-Type: application/json; charset=utf-8');
         header('Content-Length: ' . $length);
         header('Connection: close');
-        header('Cache-Control: no-cache, no-store, must-revalidate');
-        header('X-Accel-Buffering: no');  // 禁用代理 buffering
 
-        // 立即輸出
+        // 直接輸出並立即結束
         echo $output;
 
-        // 強制刷新輸出緩衝
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            flush();
-        }
-
+        // 不使用 fastcgi_finish_request，直接 exit
         exit;
     }
 

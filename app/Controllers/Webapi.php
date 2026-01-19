@@ -995,42 +995,84 @@ class Webapi extends BaseController
         $zip->extractTo($extractPath);
         log_message('info', '[Webapi] addpad01multi - ZIP extracted to: ' . $extractPath);
 
-        // 處理 data.txt
+        // 尋找資料檔案 - 支援兩種結構：
+        // 1. 根目錄的 data.txt
+        // 2. data/ 子目錄下的 *.txt 檔案（CI3 格式：0000.txt, 0001.txt...）
+        $dataFiles = [];
         $dataFile = $extractPath . '/data.txt';
-        if (!file_exists($dataFile)) {
-            log_message('error', '[Webapi] addpad01multi - data.txt not found in ZIP');
+
+        if (file_exists($dataFile)) {
+            // 結構 1: 根目錄的 data.txt
+            $dataFiles[] = $dataFile;
+            log_message('info', '[Webapi] addpad01multi - Found data.txt in root');
+        } else {
+            // 結構 2: data/ 子目錄下的 *.txt 檔案
+            $dataDir = $extractPath . '/data';
+            if (is_dir($dataDir)) {
+                $txtFiles = glob($dataDir . '/*.txt');
+                if (!empty($txtFiles)) {
+                    // 按檔名排序（0000.txt, 0001.txt...）
+                    sort($txtFiles, SORT_STRING);
+                    $dataFiles = $txtFiles;
+                    log_message('info', '[Webapi] addpad01multi - Found ' . count($txtFiles) . ' txt files in data/ folder');
+                }
+            }
+        }
+
+        if (empty($dataFiles)) {
+            log_message('error', '[Webapi] addpad01multi - No data files found in ZIP');
             $json['info'] = lang('Webapi.data_file_not_found');
             $zip->close();
             ob_end_clean();
             return $this->jsonResponse($json);
         }
 
-        $dataContent = file_get_contents($dataFile);
-        $records = json_decode($dataContent, true);
+        // 處理所有資料檔案
+        $allRecords = [];
+        foreach ($dataFiles as $file) {
+            $dataContent = file_get_contents($file);
+            log_message('debug', '[Webapi] addpad01multi - Processing file: ' . basename($file) . ', size: ' . strlen($dataContent));
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            log_message('error', '[Webapi] addpad01multi - JSON parse error: ' . json_last_error_msg());
-            $json['info'] = lang('Webapi.json_error') . ' (' . json_last_error_msg() . ')';
-            $zip->close();
-            unlink($dataFile);
-            ob_end_clean();
-            return $this->jsonResponse($json);
+            $records = json_decode($dataContent, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                log_message('error', '[Webapi] addpad01multi - JSON parse error in ' . basename($file) . ': ' . json_last_error_msg());
+                // 嘗試將單一記錄包裝成陣列
+                $records = json_decode('[' . $dataContent . ']', true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    log_message('warning', '[Webapi] addpad01multi - Skipping invalid file: ' . basename($file));
+                    continue;
+                }
+            }
+
+            if (is_array($records)) {
+                // 如果是單一記錄（有 pad0102 欄位），包裝成陣列
+                if (isset($records['pad0102'])) {
+                    $records = [$records];
+                }
+                $allRecords = array_merge($allRecords, $records);
+            }
         }
 
-        if (empty($records)) {
-            log_message('warning', '[Webapi] addpad01multi - No records in data.txt');
+        if (empty($allRecords)) {
+            log_message('warning', '[Webapi] addpad01multi - No valid records found');
             $json['status'] = 'success';
             $json['info'] = sprintf(lang('Webapi.upload_multi_success'), 0);
             $zip->close();
-            unlink($dataFile);
+            // 清理資料檔案
+            foreach ($dataFiles as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
             ob_end_clean();
             return $this->jsonResponse($json);
         }
 
-        log_message('info', '[Webapi] addpad01multi - Processing ' . count($records) . ' records');
+        log_message('info', '[Webapi] addpad01multi - Processing ' . count($allRecords) . ' total records');
 
         $successCount = 0;
-        foreach ($records as $record) {
+        foreach ($allRecords as $record) {
             $pad01 = [
                 'pad0102' => (int)($record['pad0102'] ?? 0),
                 'pad0103' => $dev0101,
@@ -1064,7 +1106,12 @@ class Webapi extends BaseController
         $json['status'] = 'success';
         $json['info'] = sprintf(lang('Webapi.upload_multi_success'), $successCount);
 
-        unlink($dataFile);
+        // 清理資料檔案
+        foreach ($dataFiles as $file) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
         $zip->close();
 
         $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);

@@ -345,10 +345,17 @@ class User
         log_message('debug', "Hash Method: {$hashMethod}");
         log_message('debug', "Salt: {$salt}");
         log_message('debug', "Stored Hash: {$hash}");
-        log_message('debug', "Calculated SHA1: " . sha1($salt . $password));
+        log_message('debug', "Calculated SHA1 (salt+pwd): " . sha1($salt . $password));
+        log_message('debug', "Calculated SHA1 (pwd+salt): " . sha1($password . $salt));
 
         switch (strtolower($hashMethod)) {
             case 'sha1':
+                // 嘗試兩種順序以相容舊版 CI3
+                // CI3 Ion Auth 通常使用 password + salt 的順序
+                if (sha1($password . $salt) === $hash) {
+                    return true;
+                }
+                // 也嘗試 salt + password 的順序
                 return sha1($salt . $password) === $hash;
             case 'password_default':
             case 'password_bcrypt':

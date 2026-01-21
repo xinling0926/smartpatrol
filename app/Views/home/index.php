@@ -142,7 +142,7 @@
 <?php endif ?>
 
 <?php if (isset($chartpermission)):?>
-<?php $defY=date('Y')-1911;$defM=date('m');?>
+<?php $defY=date('Y')-1911; $defM=(int)date('m');?>
 <div class="row">
 	<div class="col-lg-6">
 	    <div class="box box-warning">
@@ -151,12 +151,12 @@
 				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
 					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
 				<?php endfor; ?>
-			</select>
+			</select>年
 			<select id="cbeuiM">
 				<?php for($i=1;$i<=12;$i++):?>
 					<option <?=($defM==$i)?'selected':'';?>><?=str_pad($i,2,'0',STR_PAD_LEFT);?></option>
 				<?php endfor;?>
-			</select>
+			</select>月
 			<button id="btnReloadEUI" class="btn btn-sm btn-danger">更新</button>
 			<a id="btnExportEUI" download="Chart_EUI.jpg" href="" class="btn btn-sm btn-success float-right bg-flat-color-1"><i class="fa fa-download"></i></a>
 		</div>
@@ -171,12 +171,12 @@
 				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
 					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
 				<?php endfor; ?>
-			</select>
+			</select>年
 			<select id="cberrM">
 				<?php for($i=1;$i<=12;$i++):?>
 					<option <?=($defM==$i)?'selected':'';?>><?=str_pad($i,2,'0',STR_PAD_LEFT);?></option>
 				<?php endfor;?>
-			</select>
+			</select>月
 			<button id="btnReloadERR" class="btn btn-sm btn-danger">更新</button>
 			<a id="btnExportERR" download="Chart_ERR.jpg" href="" class="btn btn-sm btn-success float-right bg-flat-color-1"><i class="fa fa-download"></i></a>
 		</div>
@@ -191,12 +191,12 @@
 				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
 					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
 				<?php endfor; ?>
-			</select>
+			</select>年
 			<select id="cbmissM">
 				<?php for($i=1;$i<=12;$i++):?>
 					<option <?=($defM==$i)?'selected':'';?>><?=str_pad($i,2,'0',STR_PAD_LEFT);?></option>
 				<?php endfor;?>
-			</select>
+			</select>月
 			<button id="btnReloadMISS" class="btn btn-sm btn-danger">更新</button>
 			<a id="btnExportMISS" download="Chart_MISS.jpg" href="" class="btn btn-sm btn-success float-right bg-flat-color-1"><i class="fa fa-download"></i></a>
 		</div>

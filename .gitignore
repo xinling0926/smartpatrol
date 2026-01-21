@@ -129,11 +129,13 @@ nb-configuration.xml
 /.phpunit.*.cache
 
 #-------------------------
-# Deployment Files
+# Deployment Files (root level only)
 #-------------------------
-deploy.sh
-update.sh
-rollback.sh
+/deploy.sh
+/update.sh
+/rollback.sh
+# Allow scripts directory
+!scripts/
 
 #-------------------------
 # Data Files

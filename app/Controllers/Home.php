@@ -292,15 +292,16 @@ class Home extends AdminController
     public function axGetEUI(int $y, int $m): \CodeIgniter\HTTP\ResponseInterface
     {
         $sql = "select fmd4002,sum(fmd4104) as v from fmd40 left join fmd41 on fmd40.fmd4002=fmd41.fmd4102 where fmd4103>=? and fmd4103<? group by fmd4002 order by fmd4004";
+        $mPad = str_pad($m, 2, '0', STR_PAD_LEFT);
 
         $o = (object)[
-            'label' => ($y - 1) . $m,
+            'label' => ($y - 1) . '/' . $mPad,
             'backgroundColor' => '#66c5dc',
             'data' => $this->getArray($sql, $y - 1, $m),
         ];
 
         $n = (object)[
-            'label' => $y . $m,
+            'label' => $y . '/' . $mPad,
             'backgroundColor' => '#f5a209',
             'data' => $this->getArray($sql, $y, $m),
         ];
@@ -311,15 +312,16 @@ class Home extends AdminController
     public function axGetERR(int $y, int $m): \CodeIgniter\HTTP\ResponseInterface
     {
         $sql = "select fmd4202 as fmd4002,100-round(sum(fmd4205)/sum(fmd4204)*100,2) as v from fmd42 where fmd4203>=? and fmd4203<? group by fmd4202";
+        $mPad = str_pad($m, 2, '0', STR_PAD_LEFT);
 
         $o = (object)[
-            'label' => ($y - 1) . $m,
+            'label' => ($y - 1) . '/' . $mPad,
             'backgroundColor' => '#998ec3',
             'data' => $this->getArray($sql, $y - 1, $m),
         ];
 
         $n = (object)[
-            'label' => $y . $m,
+            'label' => $y . '/' . $mPad,
             'backgroundColor' => '#b35806',
             'data' => $this->getArray($sql, $y, $m),
         ];
@@ -330,15 +332,16 @@ class Home extends AdminController
     public function axGetMISS(int $y, int $m): \CodeIgniter\HTTP\ResponseInterface
     {
         $sql = "select fmd4202 as fmd4002,100-round(sum(fmd4206)/sum(fmd4204)*100,2) as v from fmd42 where fmd4203>=? and fmd4203<? group by fmd4202";
+        $mPad = str_pad($m, 2, '0', STR_PAD_LEFT);
 
         $o = (object)[
-            'label' => ($y - 1) . $m,
+            'label' => ($y - 1) . '/' . $mPad,
             'backgroundColor' => '#d8b365',
             'data' => $this->getArray($sql, $y - 1, $m),
         ];
 
         $n = (object)[
-            'label' => $y . $m,
+            'label' => $y . '/' . $mPad,
             'backgroundColor' => '#5ab4ac',
             'data' => $this->getArray($sql, $y, $m),
         ];

@@ -4,14 +4,11 @@
  * 接收 GitHub push 事件並觸發部署
  */
 
-// 設定密鑰 (需與 GitHub Webhook 設定相同)
-$secret = 'your_webhook_secret_here';  // TODO: 請更換為您的密鑰
+$secret = '883784c2eef562cd3d97712c2314a6de2a27a9cab7bb62ce587668d64e577f95';
 
-// 取得 GitHub 簽名和 payload
 $signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
 $payload = file_get_contents('php://input');
 
-// 驗證簽名
 $hash = 'sha256=' . hash_hmac('sha256', $payload, $secret);
 if (!hash_equals($hash, $signature)) {
     http_response_code(403);

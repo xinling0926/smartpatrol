@@ -208,4 +208,6 @@ class App extends BaseConfig
      * When enabled, shows the approve status column in query report table.
      */
     public bool $showapprove = false;
+
+    public bool $showChart = false;
 }

@@ -141,7 +141,7 @@
 	</div>
 <?php endif ?>
 
-<?php if (isset($chartpermission)):?>
+<?php if (!empty($chartpermission)):?>
 <?php $defY=date('Y')-1911; $defM=(int)date('m');?>
 <div class="row">
 	<div class="col-lg-6">

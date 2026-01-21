@@ -301,13 +301,19 @@ class Enterprise extends AdminController
             mkdir($dir, 0777, true);
         }
 
-        $uploadedFile = $this->request->getFile('file');
+        // Handle files[] array from jQuery File Upload
+        $files = $this->request->getFileMultiple('files');
+        $uploadedFile = $files[0] ?? null;
+
         if ($uploadedFile && $uploadedFile->isValid()) {
             $newName = 'enterprise_logo.' . $uploadedFile->getExtension();
             @unlink($dir . $newName);
             $uploadedFile->move($dir, $newName);
 
             echo json_encode(['files' => [['name' => $newName, 'url' => base_url('data/logo/' . $newName)]]]);
+        } else {
+            $error = $uploadedFile ? $uploadedFile->getErrorString() : 'No file uploaded';
+            echo json_encode(['files' => [['error' => $error]]]);
         }
     }
 }

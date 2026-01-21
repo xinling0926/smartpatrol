@@ -266,8 +266,21 @@ class Home extends AdminController
 
     public function axGetDepartment(): \CodeIgniter\HTTP\ResponseInterface
     {
-        $departments = ['信義', '寶慶', '板橋', '新站', '桃園', '新竹', '台中', '嘉義', '台南(成功)', '台南(公園)', '高雄', '花蓮'];
+        $departments = $this->getLabels();
         return $this->response->setJSON($departments);
+    }
+
+    /**
+     * Get department labels from fmd40 table
+     */
+    private function getLabels(): array
+    {
+        $labels = [];
+        $rs = $this->db->query('select fmd4002, fmd4003 from fmd40 order by fmd4004')->getResult();
+        foreach ($rs as $row) {
+            $labels[] = $row->fmd4003 ?? $row->fmd4002;
+        }
+        return $labels;
     }
 
     private function getArray(string $sql, int $y, int $m): array
@@ -306,7 +319,10 @@ class Home extends AdminController
             'data' => $this->getArray($sql, $y, $m),
         ];
 
-        return $this->response->setJSON([$o, $n]);
+        return $this->response->setJSON([
+            'labels' => $this->getLabels(),
+            'datasets' => [$o, $n]
+        ]);
     }
 
     public function axGetERR(int $y, int $m): \CodeIgniter\HTTP\ResponseInterface
@@ -326,7 +342,10 @@ class Home extends AdminController
             'data' => $this->getArray($sql, $y, $m),
         ];
 
-        return $this->response->setJSON([$o, $n]);
+        return $this->response->setJSON([
+            'labels' => $this->getLabels(),
+            'datasets' => [$o, $n]
+        ]);
     }
 
     public function axGetMISS(int $y, int $m): \CodeIgniter\HTTP\ResponseInterface
@@ -346,6 +365,9 @@ class Home extends AdminController
             'data' => $this->getArray($sql, $y, $m),
         ];
 
-        return $this->response->setJSON([$o, $n]);
+        return $this->response->setJSON([
+            'labels' => $this->getLabels(),
+            'datasets' => [$o, $n]
+        ]);
     }
 }

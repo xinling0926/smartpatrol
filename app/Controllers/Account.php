@@ -255,12 +255,17 @@ class Account extends AdminController
             'max_file_size' => 5 * 1024 * 1024,
         ];
 
-        // Handle upload using CI4 file upload
-        $uploadedFile = $this->request->getFile('file');
+        // Handle upload using CI4 file upload (files[] from jQuery File Upload)
+        $files = $this->request->getFileMultiple('files');
+        $uploadedFile = $files[0] ?? null;
+
         if ($uploadedFile && $uploadedFile->isValid()) {
             $newName = $uploadedFile->getRandomName();
             $uploadedFile->move($options['upload_dir'], $newName);
             echo json_encode(['files' => [['name' => $newName, 'url' => $options['upload_url'] . $newName]]]);
+        } else {
+            $error = $uploadedFile ? $uploadedFile->getErrorString() : 'No file uploaded';
+            echo json_encode(['files' => [['error' => $error]]]);
         }
     }
 
@@ -275,7 +280,10 @@ class Account extends AdminController
             mkdir($dir, 0777, true);
         }
 
-        $uploadedFile = $this->request->getFile('file');
+        // Handle files[] from jQuery File Upload
+        $files = $this->request->getFileMultiple('files');
+        $uploadedFile = $files[0] ?? null;
+
         if ($uploadedFile && $uploadedFile->isValid()) {
             $newName = date('YmdHis') . '.' . $uploadedFile->getExtension();
             $uploadedFile->move($dir, $newName);
@@ -287,6 +295,9 @@ class Account extends AdminController
             $this->session->set('avatar', $currentUserId . '/' . $newName);
 
             echo json_encode(['files' => [['name' => $newName, 'url' => base_url($dir . $newName)]]]);
+        } else {
+            $error = $uploadedFile ? $uploadedFile->getErrorString() : 'No file uploaded';
+            echo json_encode(['files' => [['error' => $error]]]);
         }
     }
 

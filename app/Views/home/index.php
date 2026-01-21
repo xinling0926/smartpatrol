@@ -221,8 +221,8 @@
 				url: url,
 				dataType: 'json',
 				success: function(data){
-					chart.data.labels = ['信義', '寶慶', '板橋', '新站', '桃園', '新竹', '台中', '嘉義', '台南(成功)', '台南(公園)', '高雄', '花蓮'];
-					chart.data.datasets = data;
+					chart.data.labels = data.labels;
+					chart.data.datasets = data.datasets;
 					chart.update();
 				},
 				error: function(xhr, status, error){

@@ -50,7 +50,7 @@
 			<div class="icon">
 				<i class="fa fa-android"></i>
 			</div>
-			<a href="<?= $setting->item('app_download_url') ?>" class="small-box-footer"><?= lang('Home.click_download') ?><i class="fa fa-arrow-circle-right"></i></a>
+			<a href="<?= base_url($setting->item('app_download_url')) ?>" class="small-box-footer"><?= lang('Home.click_download') ?> <i class="fa fa-arrow-circle-right"></i></a>
 		</div>
 	</div>
 </div>
@@ -58,11 +58,11 @@
 <div class="row">
 	<div class="col-lg-6">
         <!-- 今日當班漏檢與異常 -->
-        <button class="btn btn-default" onclick="$(window).attr('location', '<?=base_url("home/index?toggle_date={$today}&onduty=true") ?>');"><i class="fa fa-fw <?= $fa_toggle_1 ?>"></i> <?= $btnToggleString_1 ?></button>
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}&onduty=true") ?>'"><i class="fa fa-fw <?= $fa_toggle_1 ?>"></i> <?= $btnToggleString_1 ?></button>
         <!-- 今日漏檢與異常 -->
-        <button class="btn btn-default" onclick="$(window).attr('location', '<?=base_url("home/index?toggle_date={$today}") ?>');"><i class="fa fa-fw <?= $fa_toggle_2 ?>"></i> <?= $btnToggleString_2 ?></button>
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}") ?>'"><i class="fa fa-fw <?= $fa_toggle_2 ?>"></i> <?= $btnToggleString_2 ?></button>
         <!-- 昨日漏檢與異常 -->
-        <button class="btn btn-default" onclick="$(window).attr('location', '<?=base_url("home/index?toggle_date={$yesterday}") ?>');"><i class="fa fa-fw <?= $fa_toggle_3 ?>"></i> <?= $btnToggleString_3 ?></button>
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$yesterday}") ?>'"><i class="fa fa-fw <?= $fa_toggle_3 ?>"></i> <?= $btnToggleString_3 ?></button>
     </div>
 </div>
 
@@ -113,7 +113,7 @@
 							<?php foreach ($ent10->fmd01s as $fmd01) : ?>
 								<tr>
 									<td><?= $fmd01->fmd0104 ?></td>
-									<td style="white-space: nowrap;"><?= $fmd0105_opt [$fmd01->fmd0105] ?></td>
+									<td style="white-space: nowrap;"><?= $fmd0105_opt[$fmd01->fmd0105] ?? '' ?></td>
 									<?php if (isset($fmd01->iso)) : ?>
 										<td style="white-space: nowrap;"><a href="<?= base_url('query_report/index/' . $fmd01->fmd0101 . '-' . $fmd01->iso->id) ?>">
 												<?= $fmd01->iso->date ?></a></td>
@@ -148,7 +148,9 @@
 	    <div class="box box-warning">
 		<div>
 			<select id="cbeuiY">
-				<option>109</option>
+				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
+					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
+				<?php endfor; ?>
 			</select>
 			<select id="cbeuiM">
 				<?php for($i=1;$i<=12;$i++):?>
@@ -166,7 +168,9 @@
 	    <div class="box box-warning">
 		<div>
 			<select id="cberrY">
-				<option>109</option>
+				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
+					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
+				<?php endfor; ?>
 			</select>
 			<select id="cberrM">
 				<?php for($i=1;$i<=12;$i++):?>
@@ -184,7 +188,9 @@
 	    <div class="box box-warning">
 		<div>
 			<select id="cbmissY">
-				<option>109</option>
+				<?php for($y=$defY-2; $y<=$defY; $y++): ?>
+					<option <?=($defY==$y)?'selected':'';?>><?=$y;?></option>
+				<?php endfor; ?>
 			</select>
 			<select id="cbmissM">
 				<?php for($i=1;$i<=12;$i++):?>
@@ -204,23 +210,25 @@
 		function colorize(opaque, ctx) {
 			var v = ctx.dataset.data[ctx.dataIndex];
 			var old = ctx.chart.data.datasets[0].data[ctx.dataIndex];
-			console
-			if (v>old){
+			if (v > old) {
 				return '#d61e20';
-			}else{
+			} else {
 				return '#f5a209';
 			}
 		}
-		function getdata(chart,url){
+		function getdata(chart, url){
 			$.ajax({
-                url: url,
-                dataType: 'json',
-                success: function(data){
-					chart.data.labels=['信義', '寶慶', '板橋', '新站', '桃園', '新竹', '台中', '嘉義', '台南(成功)', '台南(公園)', '高雄', '花蓮'];
-	                chart.data.datasets = data;
-                    chart.update();
-                },
-            });
+				url: url,
+				dataType: 'json',
+				success: function(data){
+					chart.data.labels = ['信義', '寶慶', '板橋', '新站', '桃園', '新竹', '台中', '嘉義', '台南(成功)', '台南(公園)', '高雄', '花蓮'];
+					chart.data.datasets = data;
+					chart.update();
+				},
+				error: function(xhr, status, error){
+					console.error('Chart data load error:', error);
+				}
+			});
 		}
 		function reloadEUI(){
 			var y=$('#cbeuiY').val();

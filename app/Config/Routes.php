@@ -35,6 +35,9 @@ $routes->group('account', static function ($routes) {
     $routes->match(['GET', 'POST'], 'delete/', 'Account::delete');
     $routes->get('change-password', 'Account::changePassword');
     $routes->post('change-password', 'Account::changePassword');
+    // Alias with underscore for backwards compatibility
+    $routes->get('change_password', 'Account::changePassword');
+    $routes->post('change_password', 'Account::changePassword');
 });
 
 // Department Routes

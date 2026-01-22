@@ -2136,4 +2136,57 @@ class Webapi extends BaseController
             ]);
         }
     }
+
+    /**
+     * 訊息回報 API - APP 回報訊息接收/查看狀態
+     *
+     * @param string $action 動作類型: receive (接收) 或 read (查看)
+     *
+     * POST 參數:
+     * - dev0301: 訊息 ID
+     * - dev0101: 裝置 ID
+     * - dev0105: 裝置識別碼
+     */
+    public function messageAck(string $action = ''): \CodeIgniter\HTTP\ResponseInterface
+    {
+        $json = ['status' => 'fail', 'info' => 'Invalid action'];
+
+        $dev0301 = (int) ($this->request->getPost('dev0301') ?? 0);
+        $dev0101 = (int) ($this->request->getPost('dev0101') ?? 0);
+        $dev0105 = trim($this->request->getPost('dev0105') ?? '');
+
+        log_message('info', "[Webapi] messageAck - action: {$action}, dev0301: {$dev0301}, dev0101: {$dev0101}");
+
+        if (empty($dev0301)) {
+            $json['info'] = 'Missing dev0301';
+            return $this->jsonResponse($json);
+        }
+
+        // 驗證裝置
+        $dev01s = $this->dev01Model->getBy(['dev0101' => $dev0101, 'dev0105' => $dev0105]);
+        if (!$dev01s || count($dev01s) === 0) {
+            $json['info'] = lang('Webapi.dev01_not_exists');
+            return $this->jsonResponse($json);
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        if ($action === 'receive') {
+            // 更新接收時間
+            $this->db->query("UPDATE dev03 SET dev0308 = ? WHERE dev0301 = ? AND dev0308 IS NULL", [$now, $dev0301]);
+            $json['status'] = 'success';
+            $json['info'] = 'Receive time updated';
+            $json['dev0308'] = $now;
+        } elseif ($action === 'read') {
+            // 更新查看時間
+            $this->db->query("UPDATE dev03 SET dev0309 = ? WHERE dev0301 = ? AND dev0309 IS NULL", [$now, $dev0301]);
+            $json['status'] = 'success';
+            $json['info'] = 'Read time updated';
+            $json['dev0309'] = $now;
+        } else {
+            $json['info'] = 'Invalid action. Use: receive or read';
+        }
+
+        return $this->jsonResponse($json);
+    }
 }

@@ -10,7 +10,7 @@ class Dev03Model extends BaseModel
     protected $table = 'dev03';
     protected $primaryKey = 'dev0301';
     protected $allowedFields = [
-        'dev0302', 'dev0303', 'dev0304', 'dev0305', 'dev0306', 'dev0307', 'dev0310'
+        'dev0302', 'dev0303', 'dev0304', 'dev0305', 'dev0306', 'dev0307', 'dev0308', 'dev0309', 'dev0310'
     ];
 
     /**

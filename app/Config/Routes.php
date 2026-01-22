@@ -410,6 +410,7 @@ $routes->group('webapi', static function ($routes) {
     $routes->match(['GET', 'POST'], 'uploaddev02', 'Webapi::uploaddev02');
     $routes->match(['GET', 'POST'], 'regtags', 'Webapi::regtags');
     $routes->match(['GET', 'POST'], 'photograph', 'Webapi::photograph');
+    $routes->post('messageAck/(:alpha)', 'Webapi::messageAck/$1');
     // Legacy routes
     $routes->post('upload', 'Webapi::addpad01');
     $routes->post('sync', 'Webapi::addpad01multi');

@@ -80,9 +80,9 @@ class DeviceMessage extends AdminController
                 }
 
                 if (!isset($postData['dev0301'])) {
-                    // Insert
+                    // Insert (使用 insertData 自動加入 dev03z2 發送時間)
                     $postData['dev0310'] = $ent0101;
-                    if ($dev0301 = $this->dev03Model->insert($postData)) {
+                    if ($dev0301 = $this->dev03Model->insertData($postData)) {
                         $dev03 = $this->dev03Model->find($dev0301);
                         if ($dev03->dev0302 == "0") {
                             $obj = pushDev03ToDevice($dev03);
@@ -102,8 +102,8 @@ class DeviceMessage extends AdminController
                         return $this->ajaxReturn("OK", ['id' => $dev0301, 'title' => $postData['dev0304']]);
                     }
                 } else {
-                    // Update
-                    if ($this->dev03Model->save($postData)) {
+                    // Update (使用 saveData 自動加入 dev03z4 更新時間)
+                    if ($this->dev03Model->saveData($postData)) {
                         $dev03 = $this->dev03Model->find($id);
                         $obj = pushDev03ToDevice($dev03);
                         $status = ($obj->status ?? '') === 'success' ? 1 : 0;

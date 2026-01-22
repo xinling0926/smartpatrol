@@ -53,6 +53,18 @@
 			<a href="<?= base_url($setting->item('app_download_url')) ?>" class="small-box-footer"><?= lang('Home.click_download') ?> <i class="fa fa-arrow-circle-right"></i></a>
 		</div>
 	</div>
+	<div class="col-lg-3 col-xs-6">
+		<div class="small-box bg-purple">
+			<div class="inner">
+				<h3>後台</h3>
+				<p>版本：<?= $backend_version ?? 'unknown' ?></p>
+			</div>
+			<div class="icon">
+				<i class="fa fa-code-fork"></i>
+			</div>
+			<span class="small-box-footer">SmartPatrol CI4</span>
+		</div>
+	</div>
 </div>
 
 <div class="row">

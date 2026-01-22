@@ -39,6 +39,9 @@ class Home extends AdminController
         // Chart permission
         $this->data['chartpermission'] = config('App')->showChart ?? false;
 
+        // Backend version (git commit hash)
+        $this->data['backend_version'] = $this->getBackendVersion();
+
         return $this->render();
     }
 
@@ -369,5 +372,33 @@ class Home extends AdminController
             'labels' => $this->getLabels(),
             'datasets' => [$o, $n]
         ]);
+    }
+
+    /**
+     * Get backend version from git commit hash
+     */
+    private function getBackendVersion(): string
+    {
+        $versionFile = ROOTPATH . '.git/refs/heads/main';
+
+        if (file_exists($versionFile)) {
+            $hash = trim(file_get_contents($versionFile));
+            return substr($hash, 0, 7);
+        }
+
+        // Fallback: try git command
+        $gitDir = ROOTPATH . '.git';
+        if (is_dir($gitDir)) {
+            $hash = @file_get_contents(ROOTPATH . '.git/HEAD');
+            if ($hash && strpos($hash, 'ref:') === 0) {
+                $ref = trim(str_replace('ref: ', '', $hash));
+                $refFile = ROOTPATH . '.git/' . $ref;
+                if (file_exists($refFile)) {
+                    return substr(trim(file_get_contents($refFile)), 0, 7);
+                }
+            }
+        }
+
+        return 'unknown';
     }
 }

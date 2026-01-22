@@ -301,14 +301,16 @@ if (!function_exists('pushToDevice')) {
                 return false;
             }
 
-            $message = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token);
+            // kreait/firebase-php v8.0 API
+            $message = \Kreait\Firebase\Messaging\CloudMessage::new()->toToken($token);
 
             // 設定通知內容
             if (!empty($data['title']) || !empty($data['body'])) {
-                $message = $message->withNotification([
-                    'title' => $data['title'] ?? '',
-                    'body' => $data['body'] ?? '',
-                ]);
+                $notification = \Kreait\Firebase\Messaging\Notification::create(
+                    $data['title'] ?? '',
+                    $data['body'] ?? ''
+                );
+                $message = $message->withNotification($notification);
             }
 
             // 設定自訂資料
@@ -322,9 +324,10 @@ if (!function_exists('pushToDevice')) {
             }
 
             // 設定 Android 優先級
-            $message = $message->withAndroidConfig([
+            $androidConfig = \Kreait\Firebase\Messaging\AndroidConfig::fromArray([
                 'priority' => 'high',
             ]);
+            $message = $message->withAndroidConfig($androidConfig);
 
             $messaging->send($message);
             log_message('info', 'pushToDevice: Message sent successfully to token: ' . substr($token, 0, 20) . '...');

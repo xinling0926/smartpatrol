@@ -6,8 +6,8 @@ authors = ["SmartPatrol Team"]
 description = "Auto-deployment tool for SmartPatrol"
 
 [dependencies]
-# MySQL database connectivity
-mysql = "25"
+# MySQL database connectivity (with native-tls for SSL)
+mysql = { version = "25", default-features = false, features = ["default-rustls"] }
 # Configuration file parsing
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"

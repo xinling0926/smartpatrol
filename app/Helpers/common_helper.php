@@ -381,8 +381,8 @@ if (!function_exists('pushDev03ToDevice')) {
     /**
      * 推送 Dev03 訊息到裝置 (FCM)
      *
-     * @param object $dev03 Dev03 物件，需包含 dev0302 (FCM token)
-     * @param string $dev0107 裝置 ID（可選，用於查詢 token）
+     * @param object $dev03 Dev03 物件
+     * @param string $dev0107 FCM token（直接傳入）
      * @return object 回傳結果物件，包含 status, msgid, time
      */
     function pushDev03ToDevice(object $dev03, string $dev0107 = ''): object
@@ -393,19 +393,12 @@ if (!function_exists('pushDev03ToDevice')) {
         $oRet->msgid = '';
         $oRet->time = time();
 
-        // 取得 FCM token
-        $token = $dev03->dev0302 ?? '';
-
-        // 如果沒有 token 但有 dev0107，嘗試從資料庫查詢
-        if (empty($token) && !empty($dev0107)) {
-            $db = \Config\Database::connect();
-            $dev01 = $db->table('dev01')
-                ->where('dev0107', $dev0107)
-                ->get()
-                ->getRow();
-            if ($dev01 && !empty($dev01->dev0109)) {
-                $token = $dev01->dev0109; // 假設 dev0109 存放 FCM token
-            }
+        // 取得 FCM token：優先使用傳入的 dev0107 參數
+        $token = '';
+        if (!empty($dev0107)) {
+            $token = $dev0107;
+        } elseif (!empty($dev03->dev0302) && $dev03->dev0302 !== '0') {
+            $token = $dev03->dev0302;
         }
 
         if (empty($token)) {

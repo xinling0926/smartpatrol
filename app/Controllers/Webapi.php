@@ -274,8 +274,13 @@ class Webapi extends BaseController
         ];
         $hardwareData = json_encode($hardware);
 
-        // Debug log
-        log_message('debug', '[Webapi] login - user: ' . $identity . ', dev0101: ' . $dev0101);
+        // Debug log - 記錄所有登入參數
+        log_message('info', '[Webapi] login params - user: ' . $identity .
+            ', dev0101: ' . $dev0101 .
+            ', dev0105: ' . $dev0105 .
+            ', dev0107: ' . $dev0107 .
+            ', version: ' . $version .
+            ', hardware: ' . $hardwareData);
 
         if (empty($identity)) {
             $json['info'] = lang('Webapi.sys0102_empty');

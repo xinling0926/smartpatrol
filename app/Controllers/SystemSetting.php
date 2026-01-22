@@ -150,6 +150,25 @@ class SystemSetting extends AdminController
         if ($uploadedFile && $uploadedFile->isValid()) {
             $newName = $uploadedFile->getName();
 
+            // 如果已存在同名檔案，將舊檔案重新命名為備份
+            if (file_exists($uploadDir . $newName)) {
+                $pathInfo = pathinfo($newName);
+                $baseName = $pathInfo['filename'];
+                $extension = $pathInfo['extension'] ?? 'apk';
+                $timestamp = date('Ymd_His');
+                $backupName = "{$baseName}_backup_{$timestamp}.{$extension}";
+
+                // 確保備份檔名不重複
+                $counter = 1;
+                while (file_exists($uploadDir . $backupName)) {
+                    $backupName = "{$baseName}_backup_{$timestamp}_{$counter}.{$extension}";
+                    $counter++;
+                }
+
+                rename($uploadDir . $newName, $uploadDir . $backupName);
+                log_message('info', "APK backup created: {$backupName}");
+            }
+
             try {
                 $uploadedFile->move($uploadDir, $newName);
             } catch (\Exception $e) {

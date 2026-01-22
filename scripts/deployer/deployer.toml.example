@@ -1,0 +1,26 @@
+# SmartPatrol Deployer Configuration
+# Copy this file to /etc/smartpatrol/deployer.toml and modify as needed
+
+[deploy]
+# Path to the flag file that triggers deployment
+flag_file = "/var/www/smart_patrol/writable/deploy.flag"
+
+# Repository directory to deploy
+repo_dir = "/var/www/smart_patrol"
+
+# Git branch to pull from
+branch = "main"
+
+# Web server user (for file permissions)
+web_user = "apache"
+
+# Web server group (for file permissions)
+web_group = "apache"
+
+[database]
+# MySQL/MariaDB connection settings
+host = "localhost"
+port = 3306
+user = "smart_patrol"
+password = "your_password_here"
+database = "smart_patrol"

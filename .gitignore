@@ -141,6 +141,12 @@ nb-configuration.xml
 !scripts/
 
 #-------------------------
+# Rust Build Artifacts
+#-------------------------
+scripts/deployer/target/
+scripts/deployer/Cargo.lock
+
+#-------------------------
 # Data Files
 #-------------------------
 public/data/*

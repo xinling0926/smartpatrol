@@ -407,6 +407,13 @@ if (!function_exists('pushDev03ToDevice')) {
             return $oRet;
         }
 
+        // Debug: 記錄使用的 token (只顯示前 30 和後 10 字元)
+        $tokenLen = strlen($token);
+        $tokenPreview = $tokenLen > 50
+            ? substr($token, 0, 30) . '...' . substr($token, -10) . " (len:{$tokenLen})"
+            : $token;
+        log_message('info', "pushDev03ToDevice: Using token: {$tokenPreview}");
+
         // 移除不需要傳送的欄位
         $dev03Copy = clone $dev03;
         unset($dev03Copy->dev0306, $dev03Copy->dev0307, $dev03Copy->dev0308, $dev03Copy->dev0309);
@@ -429,7 +436,7 @@ if (!function_exists('pushDev03ToDevice')) {
 
         if ($result) {
             $oRet->status = 'success';
-            $oRet->msgid = 'fcm_' . time() . '_' . random_string('alnum', 8);
+            $oRet->msgid = 'fcm_' . time() . '_' . bin2hex(random_bytes(4));
             log_message('info', 'pushDev03ToDevice: Message sent successfully');
         } else {
             log_message('warning', 'pushDev03ToDevice: Failed to send message');

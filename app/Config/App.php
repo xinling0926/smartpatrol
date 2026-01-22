@@ -210,4 +210,29 @@ class App extends BaseConfig
     public bool $showapprove = false;
 
     public bool $showChart = false;
+
+    /**
+     * --------------------------------------------------------------------------
+     * Firebase Cloud Messaging (FCM) Configuration
+     * --------------------------------------------------------------------------
+     *
+     * Firebase 服務帳戶 JSON 檔案路徑 (相對於 WRITEPATH)
+     * 例如: 'firebase-service-account.json'
+     * 實際路徑會是: WRITEPATH . 'firebase-service-account.json'
+     */
+    public string $fcmServiceAccountFile = 'firebase-service-account.json';
+
+    /**
+     * FCM 預設推送選項
+     */
+    public array $fcmDefaultOptions = [
+        'android' => [
+            'priority' => 'high',
+        ],
+        'apns' => [
+            'headers' => [
+                'apns-priority' => '10',
+            ],
+        ],
+    ];
 }

@@ -63,6 +63,9 @@ writable/uploads/*
 writable/debugbar/*
 !writable/debugbar/.gitkeep
 
+# Firebase Service Account (敏感資訊，不應加入版控)
+writable/firebase-*.json
+
 php_errors.log
 
 #-------------------------

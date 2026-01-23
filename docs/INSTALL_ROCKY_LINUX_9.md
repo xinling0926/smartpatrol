@@ -206,30 +206,28 @@ composer --version
 ### 5.1 建立目錄結構
 ```bash
 # 建立應用程式目錄
-sudo mkdir -p /var/www/patrol/{releases,shared}
-sudo mkdir -p /var/www/patrol/shared/{writable,data}
-sudo mkdir -p /var/www/patrol/shared/writable/{cache,logs,session,uploads}
+sudo mkdir -p /var/www/smartpatrol/ci4
+sudo mkdir -p /var/www/smartpatrol/ci4/writable/{cache,logs,session,uploads}
+sudo mkdir -p /var/www/smartpatrol/ci4/public/data
 
 # 設定權限
-sudo chown -R apache:apache /var/www/patrol
-sudo chmod -R 755 /var/www/patrol
+sudo chown -R apache:apache /var/www/smartpatrol
+sudo chmod -R 755 /var/www/smartpatrol/ci4
 ```
 
 ### 5.2 上傳程式碼
 
 **方式 A：使用 Git（推薦）**
 ```bash
-cd /var/www/patrol/releases
-sudo -u apache git clone https://github.com/xinling0926/smartpatrol.git $(date +%Y%m%d_%H%M%S)
-
-# 取得最新的 release 目錄名稱
-RELEASE_DIR=$(ls -1t /var/www/patrol/releases | head -1)
+cd /var/www/smartpatrol
+sudo -u apache git clone https://github.com/xinling0926/smartpatrol.git ci4
+cd ci4
 ```
 
 **方式 B：使用 SCP/SFTP 上傳**
 ```bash
 # 在本機執行（打包）
-cd /Users/randylin/www/cgmh_ci4
+cd /path/to/local/smartpatrol
 tar -czf smartpatrol.tar.gz \
     --exclude='.git' \
     --exclude='.env' \
@@ -243,25 +241,24 @@ tar -czf smartpatrol.tar.gz \
 scp smartpatrol.tar.gz user@your-server:/tmp/
 
 # 在伺服器執行（解壓）
-RELEASE_DIR=$(date +%Y%m%d_%H%M%S)
-sudo mkdir -p /var/www/patrol/releases/${RELEASE_DIR}
-sudo tar -xzf /tmp/smartpatrol.tar.gz -C /var/www/patrol/releases/${RELEASE_DIR}
+sudo mkdir -p /var/www/smartpatrol/ci4
+sudo tar -xzf /tmp/smartpatrol.tar.gz -C /var/www/smartpatrol/ci4
 sudo rm /tmp/smartpatrol.tar.gz
 ```
 
 ### 5.3 安裝依賴
 ```bash
-cd /var/www/patrol/releases/${RELEASE_DIR}
+cd /var/www/smartpatrol/ci4
 sudo -u apache composer install --no-dev --optimize-autoloader
 ```
 
 ### 5.4 設定環境檔案
 ```bash
 # 複製範本
-sudo cp /var/www/patrol/releases/${RELEASE_DIR}/env /var/www/patrol/shared/.env
+sudo cp /var/www/smartpatrol/ci4/env /var/www/smartpatrol/ci4/.env
 
 # 編輯設定
-sudo nano /var/www/patrol/shared/.env
+sudo nano /var/www/smartpatrol/ci4/.env
 ```
 
 **編輯 .env 內容：**
@@ -292,7 +289,7 @@ database.default.port = 3306
 # SESSION
 #--------------------------------------------------------------------
 session.driver = 'CodeIgniter\Session\Handlers\FileHandler'
-session.savePath = '/var/www/patrol/shared/writable/session'
+session.savePath = '/var/www/smartpatrol/ci4/writable/session'
 
 #--------------------------------------------------------------------
 # ENCRYPTION
@@ -305,33 +302,12 @@ encryption.key = hex2bin:YOUR_32_BYTE_HEX_KEY
 php -r "echo 'hex2bin:' . bin2hex(random_bytes(32)) . PHP_EOL;"
 ```
 
-### 5.5 建立 Symbolic Links
+### 5.5 設定權限
 ```bash
-RELEASE_DIR=$(ls -1t /var/www/patrol/releases | head -1)
-
-# 連結 .env
-sudo rm -f /var/www/patrol/releases/${RELEASE_DIR}/.env
-sudo ln -s /var/www/patrol/shared/.env /var/www/patrol/releases/${RELEASE_DIR}/.env
-
-# 連結 writable
-sudo rm -rf /var/www/patrol/releases/${RELEASE_DIR}/writable
-sudo ln -s /var/www/patrol/shared/writable /var/www/patrol/releases/${RELEASE_DIR}/writable
-
-# 連結 data
-sudo rm -rf /var/www/patrol/releases/${RELEASE_DIR}/public/data
-sudo ln -s /var/www/patrol/shared/data /var/www/patrol/releases/${RELEASE_DIR}/public/data
-
-# 建立 current link
-sudo rm -f /var/www/patrol/current
-sudo ln -s /var/www/patrol/releases/${RELEASE_DIR} /var/www/patrol/current
-```
-
-### 5.6 設定權限
-```bash
-sudo chown -R apache:apache /var/www/patrol
-sudo chmod -R 755 /var/www/patrol/shared/writable
-sudo chmod -R 755 /var/www/patrol/shared/data
-sudo chmod 640 /var/www/patrol/shared/.env
+sudo chown -R apache:apache /var/www/smartpatrol/ci4
+sudo chmod -R 755 /var/www/smartpatrol/ci4/writable
+sudo chmod -R 755 /var/www/smartpatrol/ci4/public/data
+sudo chmod 640 /var/www/smartpatrol/ci4/.env
 ```
 
 ### 5.7 設定 Apache VirtualHost
@@ -339,9 +315,9 @@ sudo chmod 640 /var/www/patrol/shared/.env
 sudo tee /etc/httpd/conf.d/patrol.conf << 'EOF'
 # SmartPatrol Virtual Host Configuration
 
-Alias /patrol "/var/www/patrol/current/public"
+Alias /patrol "/var/www/smartpatrol/ci4/public"
 
-<Directory "/var/www/patrol/current/public">
+<Directory "/var/www/smartpatrol/ci4/public">
     Options -Indexes +FollowSymLinks
     AllowOverride All
     Require all granted
@@ -405,7 +381,7 @@ EOF
 mysql -u patrol_user -p smartpatrol < /path/to/database.sql
 
 # 或執行 CI4 遷移
-cd /var/www/patrol/current
+cd /var/www/smartpatrol/ci4
 sudo -u apache php spark migrate --all
 ```
 
@@ -421,14 +397,15 @@ sudo setsebool -P httpd_can_network_connect_db 1
 sudo setsebool -P httpd_can_network_connect 1
 
 # 允許 Apache 讀寫目錄
-sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/patrol/shared/writable(/.*)?"
-sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/patrol/shared/data(/.*)?"
-sudo restorecon -Rv /var/www/patrol/shared/
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/smartpatrol/ci4/writable(/.*)?"
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/smartpatrol/ci4/public/data(/.*)?"
+sudo restorecon -Rv /var/www/smartpatrol/ci4/writable/
+sudo restorecon -Rv /var/www/smartpatrol/ci4/public/data/
 
 # 確認設定
 getsebool httpd_can_network_connect
 getsebool httpd_can_network_connect_db
-ls -lZ /var/www/patrol/shared/
+ls -lZ /var/www/smartpatrol/ci4/writable/
 ```
 
 > **重要**：`httpd_can_network_connect` 是 FCM 推播通知必須的設定，否則 PHP 無法連接 Google 伺服器。
@@ -482,11 +459,11 @@ sudo systemctl restart httpd
 
 ```bash
 # 上傳到伺服器的 writable 目錄
-sudo cp firebase-service-account.json /var/www/patrol/shared/writable/
+sudo cp firebase-service-account.json /var/www/smartpatrol/ci4/writable/
 
 # 設定權限（只有 Apache 可讀取）
-sudo chown apache:apache /var/www/patrol/shared/writable/firebase-service-account.json
-sudo chmod 600 /var/www/patrol/shared/writable/firebase-service-account.json
+sudo chown apache:apache /var/www/smartpatrol/ci4/writable/firebase-service-account.json
+sudo chmod 600 /var/www/smartpatrol/ci4/writable/firebase-service-account.json
 ```
 
 ### 9.3 確認 App.php 設定
@@ -511,7 +488,7 @@ curl -I https://oauth2.googleapis.com
 
 在後台「消息推送」功能新增一則訊息，檢查日誌：
 ```bash
-tail -f /var/www/patrol/shared/writable/logs/log-$(date +%Y-%m-%d).log | grep -i fcm
+tail -f /var/www/smartpatrol/ci4/writable/logs/log-$(date +%Y-%m-%d).log | grep -i fcm
 ```
 
 ---
@@ -528,7 +505,7 @@ openssl rand -hex 32
 
 ### 10.2 修改 webhook.php
 
-編輯 `/var/www/patrol/current/public/webhook.php`，更新 secret：
+編輯 `/var/www/smartpatrol/ci4/public/webhook.php`，更新 secret：
 ```php
 $secret = 'YOUR_GENERATED_SECRET';
 ```
@@ -547,34 +524,34 @@ $secret = 'YOUR_GENERATED_SECRET';
 
 ```bash
 # 建立部署腳本
-sudo tee /var/www/patrol/deploy.sh << 'EOF'
+sudo tee /var/www/smartpatrol/ci4/deploy.sh << 'EOF'
 #!/bin/bash
-FLAG_FILE="/var/www/patrol/shared/writable/deploy.flag"
-LOG_FILE="/var/www/patrol/shared/writable/logs/deploy.log"
+FLAG_FILE="/var/www/smartpatrol/ci4/writable/deploy.flag"
+LOG_FILE="/var/www/smartpatrol/ci4/writable/logs/deploy.log"
 
 if [ -f "$FLAG_FILE" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting deployment" >> $LOG_FILE
 
-    cd /var/www/patrol/current
+    cd /var/www/smartpatrol/ci4
     sudo -u apache git pull >> $LOG_FILE 2>&1
     sudo -u apache composer install --no-dev --optimize-autoloader >> $LOG_FILE 2>&1
 
     # 清除快取
-    rm -rf /var/www/patrol/shared/writable/cache/*
+    rm -rf /var/www/smartpatrol/ci4/writable/cache/*
 
     rm -f "$FLAG_FILE"
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Deployment completed" >> $LOG_FILE
 fi
 EOF
 
-sudo chmod +x /var/www/patrol/deploy.sh
+sudo chmod +x /var/www/smartpatrol/ci4/deploy.sh
 ```
 
 ### 10.5 設定 Cron Job
 
 ```bash
 # 每分鐘檢查是否有部署請求
-echo "* * * * * root /var/www/patrol/deploy.sh" | sudo tee /etc/cron.d/patrol-deploy
+echo "* * * * * root /var/www/smartpatrol/ci4/deploy.sh" | sudo tee /etc/cron.d/patrol-deploy
 ```
 
 ---
@@ -602,7 +579,7 @@ sudo tail -f /var/log/httpd/error_log
 sudo tail -f /var/log/php_errors.log
 
 # SmartPatrol 日誌
-sudo tail -f /var/www/patrol/shared/writable/logs/log-$(date +%Y-%m-%d).log
+sudo tail -f /var/www/smartpatrol/ci4/writable/logs/log-$(date +%Y-%m-%d).log
 ```
 
 ### 11.3 測試網站
@@ -620,46 +597,44 @@ curl -I http://localhost/patrol/
 
 ### 更新應用程式
 ```bash
-# 下載新版本
-cd /var/www/patrol/releases
-RELEASE_DIR=$(date +%Y%m%d_%H%M%S)
-sudo -u apache git clone https://github.com/xinling0926/smartpatrol.git ${RELEASE_DIR}
-cd ${RELEASE_DIR}
-sudo -u apache composer install --no-dev --optimize-autoloader
+cd /var/www/smartpatrol/ci4
 
-# 建立 symbolic links
-sudo rm -f .env && sudo ln -s /var/www/patrol/shared/.env .env
-sudo rm -rf writable && sudo ln -s /var/www/patrol/shared/writable writable
-sudo rm -rf public/data && sudo ln -s /var/www/patrol/shared/data public/data
+# 拉取最新程式碼
+sudo -u apache git pull
+
+# 更新依賴套件
+sudo -u apache composer install --no-dev --optimize-autoloader
 
 # 執行遷移
 sudo -u apache php spark migrate --all
 
-# 切換版本
-sudo rm -f /var/www/patrol/current
-sudo ln -s /var/www/patrol/releases/${RELEASE_DIR} /var/www/patrol/current
-
 # 清除快取
-sudo rm -rf /var/www/patrol/shared/writable/cache/*
-
-# 清理舊版本（保留5個）
-cd /var/www/patrol/releases && ls -1t | tail -n +6 | xargs -r rm -rf
+sudo rm -rf /var/www/smartpatrol/ci4/writable/cache/*
 ```
 
 ### 回滾版本
 ```bash
-# 查看可用版本
-ls -lt /var/www/patrol/releases/
+cd /var/www/smartpatrol/ci4
+
+# 查看歷史版本
+git log --oneline -10
 
 # 切換到指定版本
-sudo rm -f /var/www/patrol/current
-sudo ln -s /var/www/patrol/releases/20250111_120000 /var/www/patrol/current
-sudo rm -rf /var/www/patrol/shared/writable/cache/*
+sudo -u apache git checkout <commit-hash>
+
+# 或回到上一版本
+sudo -u apache git checkout HEAD~1
+
+# 回到最新版本
+sudo -u apache git checkout main
+
+# 清除快取
+sudo rm -rf /var/www/smartpatrol/ci4/writable/cache/*
 ```
 
 ### 清除快取
 ```bash
-sudo rm -rf /var/www/patrol/shared/writable/cache/*
+sudo rm -rf /var/www/smartpatrol/ci4/writable/cache/*
 ```
 
 ---
@@ -670,7 +645,7 @@ sudo rm -rf /var/www/patrol/shared/writable/cache/*
 
 ```bash
 sudo tee /etc/logrotate.d/smartpatrol << 'EOF'
-/var/www/patrol/shared/writable/logs/*.log {
+/var/www/smartpatrol/ci4/writable/logs/*.log {
     daily
     missingok
     rotate 30
@@ -693,10 +668,10 @@ sudo logrotate -d /etc/logrotate.d/smartpatrol
 
 ```bash
 # 手動清理超過 30 天的日誌
-find /var/www/patrol/shared/writable/logs -name "*.log" -mtime +30 -delete
+find /var/www/smartpatrol/ci4/writable/logs -name "*.log" -mtime +30 -delete
 
 # 清理舊的 session 檔案
-find /var/www/patrol/shared/writable/session -type f -mtime +7 -delete
+find /var/www/smartpatrol/ci4/writable/session -type f -mtime +7 -delete
 ```
 
 ---
@@ -742,7 +717,7 @@ sudo systemctl restart httpd
 ### Q1: 403 Forbidden
 ```bash
 # 檢查權限
-ls -la /var/www/patrol/current/public/
+ls -la /var/www/smartpatrol/ci4/public/
 
 # 檢查 SELinux
 getenforce
@@ -758,7 +733,7 @@ sudo tail -50 /var/log/httpd/error_log
 sudo tail -50 /var/log/php_errors.log
 
 # 檢查 .env 設定
-cat /var/www/patrol/shared/.env
+cat /var/www/smartpatrol/ci4/.env
 ```
 
 ### Q3: 資料庫連線失敗
@@ -767,7 +742,7 @@ cat /var/www/patrol/shared/.env
 mysql -u patrol_user -p -e "SELECT 1"
 
 # 檢查 .env 中的資料庫設定
-grep database /var/www/patrol/shared/.env
+grep database /var/www/smartpatrol/ci4/.env
 ```
 
 ### Q4: FCM 推播失敗 - cURL error 7
@@ -886,11 +861,11 @@ httpd -M | grep -E "(headers|rewrite|ssl)"
 php -i | grep -E "(expose_php|display_errors|disable_functions)"
 
 # 檔案權限
-ls -la /var/www/patrol/shared/.env
-ls -la /var/www/patrol/shared/writable/firebase-service-account.json
+ls -la /var/www/smartpatrol/ci4/.env
+ls -la /var/www/smartpatrol/ci4/writable/firebase-service-account.json
 
 # SELinux context
-ls -lZ /var/www/patrol/shared/
+ls -lZ /var/www/smartpatrol/ci4/writable/
 
 # 測試 HTTPS
 curl -I https://your-domain.com/patrol/

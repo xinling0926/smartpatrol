@@ -310,10 +310,14 @@ sudo chmod -R 755 /var/www/smartpatrol/ci4/public/data
 sudo chmod 640 /var/www/smartpatrol/ci4/.env
 ```
 
-### 5.7 設定 Apache VirtualHost
+### 5.7 設定 Apache VirtualHost (HTTP)
+
+此設定用於未啟用 SSL 的情況，或作為 HTTPS 跳轉使用：
+
 ```bash
 sudo tee /etc/httpd/conf.d/patrol.conf << 'EOF'
-# SmartPatrol Virtual Host Configuration
+# SmartPatrol HTTP Configuration
+# 若已啟用 SSL，此設定會自動跳轉到 HTTPS
 
 Alias /patrol "/var/www/smartpatrol/ci4/public"
 
@@ -321,6 +325,14 @@ Alias /patrol "/var/www/smartpatrol/ci4/public"
     Options -Indexes +FollowSymLinks
     AllowOverride All
     Require all granted
+
+    # 安全標頭
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+
+    # CSP 設定 (jstree 等元件需要 unsafe-inline/unsafe-eval)
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self';"
 
     # 啟用 URL 重寫
     <IfModule mod_rewrite.c>
@@ -330,14 +342,30 @@ Alias /patrol "/var/www/smartpatrol/ci4/public"
         RewriteCond %{REQUEST_FILENAME} !-d
         RewriteRule ^(.*)$ index.php/$1 [L]
     </IfModule>
+
+    # webapi 使用 HTTP/1.0 (Android APP 相容性)
+    <If "%{REQUEST_URI} =~ m#/webapi#">
+        SetEnv downgrade-1.0
+        SetEnv force-response-1.0
+    </If>
+</Directory>
+
+# 禁止存取敏感目錄
+<Directory "/var/www/smartpatrol/ci4/app">
+    Require all denied
+</Directory>
+<Directory "/var/www/smartpatrol/ci4/writable">
+    Require all denied
+</Directory>
+<Directory "/var/www/smartpatrol/ci4/vendor">
+    Require all denied
 </Directory>
 
 # 禁止存取敏感檔案
 <FilesMatch "^\.">
     Require all denied
 </FilesMatch>
-
-<FilesMatch "\.(env|ini|log|sh)$">
+<FilesMatch "\.(env|ini|log|sh|json)$">
     Require all denied
 </FilesMatch>
 EOF
@@ -429,16 +457,108 @@ sudo certbot renew --dry-run
 echo "0 3 * * * root certbot renew --quiet" | sudo tee /etc/cron.d/certbot
 ```
 
-### 8.2 強制 HTTPS 重導向
+### 8.2 設定 SSL VirtualHost
+
+建立完整的 HTTPS 設定檔：
+
 ```bash
-sudo tee /etc/httpd/conf.d/redirect-https.conf << 'EOF'
-<VirtualHost *:80>
+sudo tee /etc/httpd/conf.d/patrol-ssl.conf << 'EOF'
+<VirtualHost *:443>
     ServerName your-domain.com
-    Redirect permanent / https://your-domain.com/
+    DocumentRoot /var/www/html
+
+    # SSL 憑證設定
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/your-domain.com/cert.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/your-domain.com/privkey.pem
+    SSLCertificateChainFile /etc/letsencrypt/live/your-domain.com/chain.pem
+
+    # SSL 安全設定
+    SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+    SSLHonorCipherOrder on
+
+    # SmartPatrol 應用程式
+    Alias /patrol "/var/www/smartpatrol/ci4/public"
+
+    <Directory "/var/www/smartpatrol/ci4/public">
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # 安全標頭
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set X-XSS-Protection "1; mode=block"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+        # CSP 設定 (jstree 等元件需要 unsafe-inline/unsafe-eval)
+        Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self';"
+
+        # 啟用 URL 重寫
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /patrol/
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule ^(.*)$ index.php/$1 [L]
+        </IfModule>
+
+        # webapi 使用 HTTP/1.0 (Android APP 相容性)
+        <If "%{REQUEST_URI} =~ m#/webapi#">
+            SetEnv downgrade-1.0
+            SetEnv force-response-1.0
+        </If>
+    </Directory>
+
+    # 禁止存取敏感目錄
+    <Directory "/var/www/smartpatrol/ci4/app">
+        Require all denied
+    </Directory>
+    <Directory "/var/www/smartpatrol/ci4/writable">
+        Require all denied
+    </Directory>
+    <Directory "/var/www/smartpatrol/ci4/vendor">
+        Require all denied
+    </Directory>
+
+    # 禁止存取敏感檔案
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+    <FilesMatch "\.(env|ini|log|sh|json)$">
+        Require all denied
+    </FilesMatch>
 </VirtualHost>
 EOF
+```
 
+### 8.3 設定 HTTP 自動跳轉 HTTPS
+
+```bash
+sudo tee /etc/httpd/conf.d/redirect-https.conf << 'EOF'
+# HTTP 自動跳轉到 HTTPS
+<VirtualHost *:80>
+    ServerName your-domain.com
+
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</VirtualHost>
+EOF
+```
+
+### 8.4 測試並重啟 Apache
+
+```bash
+# 測試設定
+sudo apachectl configtest
+
+# 重啟 Apache
 sudo systemctl restart httpd
+
+# 驗證 SSL
+curl -I https://your-domain.com/patrol/
 ```
 
 ---

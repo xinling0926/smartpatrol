@@ -98,6 +98,12 @@ EOF
 ```bash
 # 確認 mod_rewrite 已啟用（CI4 需要）
 sudo dnf install -y mod_ssl
+
+# 確認 mod_headers 已載入（安全標頭需要）
+# Rocky Linux 9 的 Apache 預設已包含，但需確認已啟用
+httpd -M | grep headers
+# 如果沒有輸出，編輯 /etc/httpd/conf.modules.d/00-base.conf 確認有這行：
+# LoadModule headers_module modules/mod_headers.so
 ```
 
 ---
@@ -411,14 +417,21 @@ sudo -u apache php spark migrate --all
 # 允許 Apache 連接資料庫
 sudo setsebool -P httpd_can_network_connect_db 1
 
+# 允許 Apache 發送外部網路請求（FCM 推送、Webhook 等必要）
+sudo setsebool -P httpd_can_network_connect 1
+
 # 允許 Apache 讀寫目錄
 sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/patrol/shared/writable(/.*)?"
 sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/patrol/shared/data(/.*)?"
 sudo restorecon -Rv /var/www/patrol/shared/
 
-# 確認
+# 確認設定
+getsebool httpd_can_network_connect
+getsebool httpd_can_network_connect_db
 ls -lZ /var/www/patrol/shared/
 ```
+
+> **重要**：`httpd_can_network_connect` 是 FCM 推播通知必須的設定，否則 PHP 無法連接 Google 伺服器。
 
 ---
 
@@ -453,9 +466,122 @@ sudo systemctl restart httpd
 
 ---
 
-## 第九部分：驗證安裝
+## 第九部分：Firebase Cloud Messaging (FCM) 設定
 
-### 9.1 檢查服務狀態
+如需使用 APP 推播通知功能，請依照以下步驟設定：
+
+### 9.1 取得 Firebase Service Account
+
+1. 前往 [Firebase Console](https://console.firebase.google.com/)
+2. 選擇您的專案（或建立新專案）
+3. 進入 **專案設定** → **服務帳戶**
+4. 點擊 **產生新的私密金鑰**
+5. 下載 JSON 檔案
+
+### 9.2 上傳 Service Account 檔案
+
+```bash
+# 上傳到伺服器的 writable 目錄
+sudo cp firebase-service-account.json /var/www/patrol/shared/writable/
+
+# 設定權限（只有 Apache 可讀取）
+sudo chown apache:apache /var/www/patrol/shared/writable/firebase-service-account.json
+sudo chmod 600 /var/www/patrol/shared/writable/firebase-service-account.json
+```
+
+### 9.3 確認 App.php 設定
+
+檢查 `app/Config/App.php` 中的 FCM 設定：
+```php
+public string $fcmServiceAccountFile = 'firebase-service-account.json';
+```
+
+### 9.4 驗證 FCM 連線
+
+```bash
+# 確認 SELinux 允許外部連線
+getsebool httpd_can_network_connect
+# 應該顯示 httpd_can_network_connect --> on
+
+# 檢查 PHP 是否能連接 Google
+curl -I https://oauth2.googleapis.com
+```
+
+### 9.5 測試推播
+
+在後台「消息推送」功能新增一則訊息，檢查日誌：
+```bash
+tail -f /var/www/patrol/shared/writable/logs/log-$(date +%Y-%m-%d).log | grep -i fcm
+```
+
+---
+
+## 第十部分：GitHub Webhook 自動部署（選用）
+
+### 10.1 設定 Webhook Secret
+
+```bash
+# 生成隨機 secret
+openssl rand -hex 32
+# 例如：883784c2eef562cd3d97712c2314a6de2a27a9cab7bb62ce587668d64e577f95
+```
+
+### 10.2 修改 webhook.php
+
+編輯 `/var/www/patrol/current/public/webhook.php`，更新 secret：
+```php
+$secret = 'YOUR_GENERATED_SECRET';
+```
+
+### 10.3 在 GitHub 設定 Webhook
+
+1. 進入 GitHub repo → **Settings** → **Webhooks**
+2. 點擊 **Add webhook**
+3. 設定：
+   - Payload URL: `https://your-domain.com/patrol/webhook.php`
+   - Content type: `application/json`
+   - Secret: 輸入上面生成的 secret
+   - Events: 選擇 **Just the push event**
+
+### 10.4 設定自動部署腳本
+
+```bash
+# 建立部署腳本
+sudo tee /var/www/patrol/deploy.sh << 'EOF'
+#!/bin/bash
+FLAG_FILE="/var/www/patrol/shared/writable/deploy.flag"
+LOG_FILE="/var/www/patrol/shared/writable/logs/deploy.log"
+
+if [ -f "$FLAG_FILE" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting deployment" >> $LOG_FILE
+
+    cd /var/www/patrol/current
+    sudo -u apache git pull >> $LOG_FILE 2>&1
+    sudo -u apache composer install --no-dev --optimize-autoloader >> $LOG_FILE 2>&1
+
+    # 清除快取
+    rm -rf /var/www/patrol/shared/writable/cache/*
+
+    rm -f "$FLAG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Deployment completed" >> $LOG_FILE
+fi
+EOF
+
+sudo chmod +x /var/www/patrol/deploy.sh
+```
+
+### 10.5 設定 Cron Job
+
+```bash
+# 每分鐘檢查是否有部署請求
+echo "* * * * * root /var/www/patrol/deploy.sh" | sudo tee /etc/cron.d/patrol-deploy
+```
+
+---
+
+## 第十一部分：驗證安裝
+
+### 11.1 檢查服務狀態
 ```bash
 # Apache
 sudo systemctl status httpd
@@ -467,7 +593,7 @@ php -v
 sudo systemctl status mysqld
 ```
 
-### 9.2 檢查日誌
+### 11.2 檢查日誌
 ```bash
 # Apache 錯誤日誌
 sudo tail -f /var/log/httpd/error_log
@@ -479,7 +605,7 @@ sudo tail -f /var/log/php_errors.log
 sudo tail -f /var/www/patrol/shared/writable/logs/log-$(date +%Y-%m-%d).log
 ```
 
-### 9.3 測試網站
+### 11.3 測試網站
 ```bash
 # 本機測試
 curl -I http://localhost/patrol/
@@ -490,7 +616,7 @@ curl -I http://localhost/patrol/
 
 ---
 
-## 第十部分：維護指令
+## 第十二部分：維護指令
 
 ### 更新應用程式
 ```bash
@@ -538,6 +664,79 @@ sudo rm -rf /var/www/patrol/shared/writable/cache/*
 
 ---
 
+## 第十三部分：日誌管理
+
+### 13.1 設定 Log Rotation
+
+```bash
+sudo tee /etc/logrotate.d/smartpatrol << 'EOF'
+/var/www/patrol/shared/writable/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0644 apache apache
+    sharedscripts
+    postrotate
+        /bin/systemctl reload httpd > /dev/null 2>&1 || true
+    endscript
+}
+EOF
+
+# 測試設定
+sudo logrotate -d /etc/logrotate.d/smartpatrol
+```
+
+### 13.2 清理舊日誌
+
+```bash
+# 手動清理超過 30 天的日誌
+find /var/www/patrol/shared/writable/logs -name "*.log" -mtime +30 -delete
+
+# 清理舊的 session 檔案
+find /var/www/patrol/shared/writable/session -type f -mtime +7 -delete
+```
+
+---
+
+## 第十四部分：PHP 特殊設定
+
+### 14.1 調整 disable_functions（如需要）
+
+如果某些功能無法正常運作，可能需要調整 PHP 的 disable_functions：
+
+```bash
+sudo nano /etc/php.d/99-security.ini
+```
+
+**FCM 推播需要的函數：**
+確保以下函數**不在** disable_functions 清單中：
+- `curl_exec`
+- `curl_multi_exec`
+
+**修改後重啟 Apache：**
+```bash
+sudo systemctl restart httpd
+```
+
+### 14.2 增加 PHP 記憶體限制（大檔案上傳）
+
+```bash
+# 如果需要處理大型 APK 或檔案
+sudo tee -a /etc/php.d/99-uploads.ini << 'EOF'
+upload_max_filesize = 100M
+post_max_size = 100M
+memory_limit = 512M
+max_execution_time = 600
+EOF
+
+sudo systemctl restart httpd
+```
+
+---
+
 ## 常見問題
 
 ### Q1: 403 Forbidden
@@ -571,16 +770,128 @@ mysql -u patrol_user -p -e "SELECT 1"
 grep database /var/www/patrol/shared/.env
 ```
 
+### Q4: FCM 推播失敗 - cURL error 7
+
+**錯誤訊息：**
+```
+cURL error 7: Failed to connect to oauth2.googleapis.com
+```
+
+**解決方案：**
+```bash
+# 檢查 SELinux 設定
+getsebool httpd_can_network_connect
+
+# 如果顯示 off，啟用它
+sudo setsebool -P httpd_can_network_connect 1
+```
+
+### Q5: FCM 推播失敗 - NotRegistered
+
+**錯誤訊息：**
+```
+The registration token is not a valid FCM registration token
+```
+
+**原因：**
+- FCM token 已失效（APP 被移除或重新安裝）
+- Token 在資料庫中被截斷（欄位長度不足）
+
+**解決方案：**
+1. 確認資料庫 `dev01.dev0107` 欄位長度至少 255 字元
+2. 讓使用者重新登入 APP 以更新 token
+
+### Q6: Apache 安全標頭沒有生效
+
+```bash
+# 檢查 mod_headers 是否載入
+httpd -M | grep headers
+
+# 如果沒有，確認 modules 設定
+cat /etc/httpd/conf.modules.d/00-base.conf | grep headers
+
+# 檢查回應標頭
+curl -I https://your-domain.com/patrol/
+```
+
+### Q7: 上傳大檔案失敗 (APK)
+
+```bash
+# 檢查 PHP 設定
+php -i | grep -E "(upload_max|post_max|memory_limit)"
+
+# 修改設定
+sudo nano /etc/php.d/99-uploads.ini
+# 加入：
+# upload_max_filesize = 100M
+# post_max_size = 100M
+
+sudo systemctl restart httpd
+```
+
 ---
 
 ## 安全檢查清單
 
+### 基本安全
 - [ ] 防火牆只開啟必要 port (80, 443)
-- [ ] SELinux 設定正確
-- [ ] PHP 已停用危險函數
-- [ ] Apache 已隱藏版本資訊
-- [ ] 使用 HTTPS
-- [ ] 資料庫使用強密碼
+- [ ] 使用 HTTPS (Let's Encrypt 或商業憑證)
+- [ ] HTTP 自動重導向到 HTTPS
+
+### SELinux
+- [ ] SELinux 設定為 enforcing 或 permissive
+- [ ] `httpd_can_network_connect_db = on` (資料庫連線)
+- [ ] `httpd_can_network_connect = on` (FCM 推播)
+- [ ] writable 和 data 目錄有正確的 SELinux context
+
+### Apache
+- [ ] 隱藏 Apache 版本 (`ServerTokens Prod`)
+- [ ] 已載入 mod_headers 模組
+- [ ] 已設定安全標頭 (X-Frame-Options, X-XSS-Protection 等)
+- [ ] 禁止目錄瀏覽 (`Options -Indexes`)
+- [ ] 已封鎖敏感檔案存取 (.env, .git 等)
+
+### PHP
+- [ ] 隱藏 PHP 版本 (`expose_php = Off`)
+- [ ] 已停用危險函數 (但保留 FCM 需要的 curl 函數)
+- [ ] Session 安全設定 (httponly, secure, samesite)
+- [ ] 錯誤訊息不顯示在頁面 (`display_errors = Off`)
+
+### 應用程式
 - [ ] .env 檔案權限為 640
 - [ ] writable 目錄不可被直接存取
+- [ ] 資料庫使用強密碼
+- [ ] Firebase Service Account JSON 權限為 600
+- [ ] Webhook secret 已更換為隨機值
+
+### 維護
+- [ ] 已設定日誌輪替 (logrotate)
 - [ ] 已設定自動備份
+- [ ] 已設定 SSL 憑證自動更新 (certbot)
+
+---
+
+## 快速檢查指令
+
+```bash
+# SELinux 狀態
+getenforce
+getsebool httpd_can_network_connect
+getsebool httpd_can_network_connect_db
+
+# Apache 模組
+httpd -M | grep -E "(headers|rewrite|ssl)"
+
+# PHP 設定
+php -i | grep -E "(expose_php|display_errors|disable_functions)"
+
+# 檔案權限
+ls -la /var/www/patrol/shared/.env
+ls -la /var/www/patrol/shared/writable/firebase-service-account.json
+
+# SELinux context
+ls -lZ /var/www/patrol/shared/
+
+# 測試 HTTPS
+curl -I https://your-domain.com/patrol/
+```

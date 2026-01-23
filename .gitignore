@@ -127,6 +127,9 @@ nb-configuration.xml
 # Visual Studio Code
 .vscode/
 
+# Claude Code (AI Assistant)
+.claude/
+
 /results/
 /phpunit*.xml
 /.phpunit.*.cache

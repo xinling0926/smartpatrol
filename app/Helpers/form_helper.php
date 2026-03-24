@@ -5,6 +5,25 @@
  * 表單輔助函數擴展
  */
 
+if (!function_exists('form_hidden')) {
+    /**
+     * 覆寫 CI4 的 form_hidden()
+     * 自動將值轉為字串，避免 TypeError
+     */
+    function form_hidden(string $name, $value = '', bool $recursing = false): string
+    {
+        if (is_array($value)) {
+            $hidden = '';
+            foreach ($value as $k => $v) {
+                $hidden .= form_hidden($name . '[' . $k . ']', $v, true);
+            }
+            return $hidden;
+        }
+
+        return '<input type="hidden" name="' . $name . '" value="' . esc((string)$value) . "\" />\n";
+    }
+}
+
 if (!function_exists('form_text_input')) {
     /**
      * 產生文字輸入框

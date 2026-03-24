@@ -117,25 +117,25 @@ class Home extends AdminController
         $option = ['pad0306' => 0, '*sys0110' => "sys0110 in ({$ent10Id})"];
         $rows = $pad03Model->countBy($option);
         $pad03s = $pad03Model->getBy($option, 1, 0, 'pad03z2 asc');
-        $repair['pad030'] = ['rows' => $rows, 'time' => $rows && $pad03s ? $pad03s->pad03z2 : ''];
+        $repair['pad030'] = ['rows' => $rows, 'time' => $rows && $pad03s ? $pad03s[0]->pad03z2 : ''];
 
         // Delegated repair records
         $option = ['pad0513' => 1, '*pad0510' => "pad0510 in ({$ent10Id})"];
         $rows = $pad05Model->countBy($option);
         $pad05s = $pad05Model->getBy($option, 1, 0, 'pad0509 asc');
-        $repair['pad051'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s->pad0509 : ''];
+        $repair['pad051'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s[0]->pad0509 : ''];
 
         // Acceptance records
         $option = ['pad0513' => 3, '*pad0507' => "pad0507 in ({$ent10Id})"];
         $rows = $pad05Model->countBy($option);
         $pad05s = $pad05Model->getBy($option, 1, 0, 'pad05z4 asc');
-        $repair['pad053'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s->pad05z4 : ''];
+        $repair['pad053'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s[0]->pad05z4 : ''];
 
         // Case closed records
         $option = ['pad0513' => 4, '*pad0510' => "pad0510 in ({$ent10Id})"];
         $rows = $pad05Model->countBy($option);
         $pad05s = $pad05Model->getBy($option, 1, 0, 'pad05z4 asc');
-        $repair['pad054'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s->pad05z4 : ''];
+        $repair['pad054'] = ['rows' => $rows, 'time' => $rows && $pad05s ? $pad05s[0]->pad05z4 : ''];
 
         $this->data['repair'] = $repair;
     }

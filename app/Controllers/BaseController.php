@@ -54,6 +54,9 @@ abstract class BaseController extends Controller
      */
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
+        // 先載入自訂 form_helper，確保覆寫 CI4 內建函數
+        require_once APPPATH . 'Helpers/form_helper.php';
+
         parent::initController($request, $response, $logger);
 
         // Set locale to default (zh-TW) to ensure language files load correctly

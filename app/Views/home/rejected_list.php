@@ -29,7 +29,7 @@
 							$i = 0;
 						}
 						echo '<td><a href="' . base_url('query_report/index/' . $fmd01->fmd0101 . '-' . $d->id) . '?approve">' . $d->date;
-						if ($d->c04 > 0) {
+						if ($d->c04 > 0 && isset($fmd21s[$d->c04])) {
 							echo '&nbsp;' . $fmd21s[$d->c04];
 						}
 						echo "</a>";

@@ -57,7 +57,8 @@ class GenerateReport extends BaseCommand
                 if ($fmd02s) {
                     $list = $this->getDaypartList($useApproveModule, $fmd01, $this->now, $fmd02s);
                     foreach ($list as $date => $fmd0203s) {
-                        $result[] = $fmd01->fmd0104 . ' ' . $this->isoModel->generateReport($fmd01, $date, implode(',', $fmd0203s));
+                        $isoDate = $this->isoModel->isoDate($fmd01->fmd0105, $date);
+                        $result[] = $fmd01->fmd0104 . ' ' . $this->isoModel->generateReport($fmd01, $isoDate, implode(',', $fmd0203s));
                     }
                 } else {
                     $isoDate = $this->isoModel->isoDate($fmd01->fmd0105, date("Y-m-d", $this->now));

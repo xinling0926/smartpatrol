@@ -262,7 +262,9 @@ $routes->group('missing', static function ($routes) {
 $routes->group('approve', static function ($routes) {
     $routes->get('/', 'Approve::index');
     $routes->get('approve-form/(:num)/(:num)', 'Approve::approveForm/$1/$2');
+    $routes->get('approve_form/(:num)/(:num)', 'Approve::approveForm/$1/$2');
     $routes->post('do-approve', 'Approve::doApprove');
+    $routes->post('do_approve', 'Approve::doApprove');
 });
 
 // Approve Setting Routes

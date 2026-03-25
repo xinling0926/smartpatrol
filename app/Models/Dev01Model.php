@@ -11,7 +11,7 @@ class Dev01Model extends BaseModel
     protected $primaryKey = 'dev0101';
     protected $allowedFields = [
         'dev0102', 'dev0103', 'dev0104', 'dev0105', 'dev0106', 'dev0107',
-        'dev0108', 'dev0109', 'dev0110'
+        'dev0108', 'dev0109', 'dev0110', 'dev0111', 'dev0112', 'dev0113'
     ];
 
     /**

@@ -57,27 +57,50 @@ class Fmd22Model extends BaseModel
     public function getUserApproveFlow(): array
     {
         $currentUser = $this->currentUser;
-        $userTitle = $currentUser->sys0119 ?? '';
+        if (empty($currentUser->sys0110)) {
+            return [];
+        }
 
-        return $this->db->table($this->table)
-            ->where("fmd2205 LIKE '%{$userTitle}%'")
-            ->get()
-            ->getResult();
+        $sys0119 = $currentUser->sys0119 ?? '';
+        $fmd01Model = model('Fmd01Model');
+        $fmd0106s = $fmd01Model->getUserActiveFmd0106();
+        $fmd0106 = implode(',', $fmd0106s);
+
+        $sql = "SELECT fmd2202, fmd2203, fmd2204 FROM fmd22 JOIN fmd20 ON fmd2002=fmd2202";
+        $sql .= " WHERE fmd2003=2";
+        $sql .= " AND (fmd2205='{$sys0119}' OR fmd2205 LIKE '{$sys0119};%' OR fmd2205 LIKE '%;{$sys0119}' OR fmd2205 LIKE '%;{$sys0119};%')";
+        if ($fmd0106) {
+            $sql .= " AND (fmd2206={$currentUser->sys0110} OR (fmd2206=0 AND fmd2202 IN ({$fmd0106})))";
+        } else {
+            $sql .= " AND fmd2206={$currentUser->sys0110}";
+        }
+
+        return $this->db->query($sql)->getResult();
     }
 
     public function checkUserApproveFlow(int $fmd0106, int $fmd2101, int $step): bool
     {
         $currentUser = $this->currentUser;
-        $userTitle = $currentUser->sys0119 ?? '';
+        $sys0119 = $currentUser->sys0119 ?? '';
 
-        $result = $this->db->table($this->table)
+        $fmd22 = $this->db->table($this->table)
             ->where('fmd2202', $fmd0106)
             ->where('fmd2203', $fmd2101)
             ->where('fmd2204', $step)
-            ->where("fmd2205 LIKE '%{$userTitle}%'")
-            ->countAllResults();
+            ->get()
+            ->getRow();
 
-        return $result > 0;
+        if ($fmd22 && in_array($sys0119, explode(';', $fmd22->fmd2205))) {
+            if ($fmd22->fmd2206 == 0) {
+                $fmd01Model = model('Fmd01Model');
+                $fmd0106s = $fmd01Model->getUserActiveFmd0106();
+                return in_array($fmd0106, $fmd0106s);
+            } else {
+                return $fmd22->fmd2206 == $currentUser->sys0110;
+            }
+        }
+
+        return false;
     }
 
     public function getLastStep(int $fmd0106, int $fmd2101): int

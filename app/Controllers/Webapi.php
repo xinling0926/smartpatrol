@@ -171,7 +171,7 @@ class Webapi extends BaseController
                         'dev0113' => $hardwareData,
                     ];
 
-                    $dev01->dev0101 = $this->dev01Model->insert($dev01);
+                    $dev01->dev0101 = $this->dev01Model->insertData((array)$dev01);
                     if ($dev01->dev0101) {
                         $json['dev01'] = $this->dev01Model->find($dev01->dev0101);
                     } else {

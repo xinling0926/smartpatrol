@@ -6,6 +6,9 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+// Webhook (no auth required)
+$routes->post('webhook/receive', 'Webhook::receive');
+
 // Default Route
 $routes->get('/', 'Home::index');
 
@@ -240,6 +243,7 @@ $routes->group('rawdata', static function ($routes) {
     $routes->get('detail/(:num)', 'Rawdata::detail/$1');
     $routes->get('detail_dialog/(:num)', 'Rawdata::detailDialog/$1');
     $routes->get('detail_dialog/(:num)/(:num)', 'Rawdata::detailDialog/$1/$2');
+    $routes->get('detail_dialog_miss', 'Rawdata::detailDialogMiss');
     $routes->get('detail_dialog_miss/(:segment)', 'Rawdata::detailDialogMiss/$1');
     $routes->match(['GET', 'POST'], 'detail_add_comment', 'Rawdata::detailAddComment');
     $routes->match(['GET', 'POST'], 'detail_add_comment/(:segment)', 'Rawdata::detailAddComment/$1');

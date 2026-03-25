@@ -260,8 +260,11 @@ class Rawdata extends AdminController
         return $this->render();
     }
 
-    public function detailDialogMiss(string $jsonData): string
+    public function detailDialogMiss(string $jsonData = ''): string
     {
+        if (empty($jsonData)) {
+            $jsonData = $this->request->getGet('data') ?? '';
+        }
         $tmp = urldecode($jsonData);
         $tmpJson = json_decode($tmp);
 

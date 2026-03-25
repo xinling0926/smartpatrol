@@ -700,7 +700,7 @@ function show_rawdata_miss(tmpJson) {
         var width = '70%';
     }
     var height = '90%';
-    var url = base_url + 'rawdata/detail_dialog_miss/' + tmpJson;
+    var url = base_url + 'rawdata/detail_dialog_miss?data=' + encodeURIComponent(tmpJson);
     if (langType == 'zh-CN') {
         var title = '巡检纪录';
     } else {

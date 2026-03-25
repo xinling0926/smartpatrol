@@ -93,7 +93,7 @@ class Approve extends AdminController
 
         if ($doApproval) {
             $output .= '</div><div class="col-lg-6">';
-            $apfData = ['fmd0101' => $fmd01->fmd0101, 'id' => $isoC->c01];
+            $apfData = ['fmd0101' => $fmd01->fmd0101, 'id' => $isoC->c01, 'current_user' => $this->data['current_user']];
             $output .= view('approve/approve_form', $apfData);
             $output .= '</div></div>';
         }

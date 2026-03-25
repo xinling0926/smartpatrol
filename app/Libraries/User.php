@@ -685,7 +685,7 @@ class User
             ->get()
             ->getRow();
 
-        return $user->name ?? '';
+        return $user ? user_display_name($user) : '';
     }
 
     /**

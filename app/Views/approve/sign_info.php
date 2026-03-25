@@ -30,7 +30,7 @@
 					if ($d->c04 == $fmd21->fmd2101) {
 						$c08 = $d->c08;
 						if ($n) $sign_info .= '</tr><tr>';
-						$user = $this->sys01_model->get($d->d05);
+						$user = model('Sys01Model')->find($d->d05);
 						$sign_info .= "<td>{$d->d03}</td><td>".user_display_name($user)."</td>";
 						if ($user->sys0120) {
 							$sign_img = base_url("data/sign/" . $user->sys0101 . '/' . $user->sys0120);
@@ -74,7 +74,7 @@
 			echo lang('f_d04')."</th><th>".lang('f_d06')."</th><th>".lang('f_d07')."</th></tr>";
 			foreach ($iso_ds as $d) {
 			    echo "<tr>";
-				$user = $this->sys01_model->get($d->d05);
+				$user = model('Sys01Model')->find($d->d05);
 				echo "<td>{$d->d03}</td><td>".user_display_name($user)."</td>";
 				if ($user->sys0120) {
 					$sign_img = base_url("data/sign/" . $user->sys0101 . '/' . $user->sys0120);

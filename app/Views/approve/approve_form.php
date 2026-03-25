@@ -17,7 +17,7 @@
 		<div class="form-group">
 			<label class="col-sm-2 control-label"><?=lang('f_d05')?></label>
 			<div class="col-sm-4">
-				<img src="<?= ($current_user->sys0120) ? base_url("data/sign/" . $user->id . '/' . $current_user->sys0120) :
+				<img src="<?= ($current_user->sys0120) ? base_url("data/sign/" . $current_user->sys0101 . '/' . $current_user->sys0120) :
                     base_url("assets/img/no_sign.png") ?>" class="form-control" alt="<?=lang('no_sign')?>" style="width:100%;height:auto">
 			</div>
 			<label class="col-sm-2 control-label"><?=lang('f_d04')?></label>

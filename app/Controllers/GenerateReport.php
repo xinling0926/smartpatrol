@@ -132,6 +132,7 @@ class GenerateReport extends AdminController
 
     public function generateReport(): \CodeIgniter\HTTP\ResponseInterface
     {
+        set_time_limit(300);
         $fmd02s = null;
         $fmd2101 = 0;
 

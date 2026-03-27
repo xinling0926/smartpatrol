@@ -35,6 +35,13 @@ return [
     'f_sign_result' => '簽核結果',
     'f_sign_remark' => '簽核備註',
 
+    // dropdown
+    'dropdown_select' => '請選擇報表',
+
+    // fmd3005
+    'f_fmd3005_1' => '歲修',
+    'f_fmd3005_2' => '停車',
+
     // hints
     'sign_img_hint' => '還沒有簽名檔',
     'select_report_err_hint' => '查無報表設定資料！',

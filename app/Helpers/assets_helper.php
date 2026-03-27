@@ -19,7 +19,7 @@ if (!function_exists('assets_js')) {
         $url = base_url($path);
 
         // 添加版本參數防止快取
-        $version = '20260104';
+        $version = '20260327';
         $url .= '?v=' . $version;
 
         echo '<script src="' . $url . '"></script>' . PHP_EOL;
@@ -40,7 +40,7 @@ if (!function_exists('assets_css')) {
         $url = base_url($path);
 
         // 添加版本參數防止快取
-        $version = '20260104';
+        $version = '20260327';
         $url .= '?v=' . $version;
 
         echo '<link rel="stylesheet" href="' . $url . '">' . PHP_EOL;

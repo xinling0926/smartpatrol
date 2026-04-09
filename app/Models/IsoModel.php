@@ -639,19 +639,22 @@ class IsoModel extends Model
         $fmd07Model = model('Fmd07Model');
         $fmd07s = $fmd07Model->getByFmd0101($reportMaster->fmd0101);
 
-        // 針對班別限定做記號
+        // 針對班別限定做記號（預先快取 fmd0610 查詢）
+        $fmd0610Cache = [];
         foreach ($fmd07s as $fmd07) {
             if ($fmd07->fmd0704) {
+                if (!isset($fmd0610Cache[$fmd07->fmd0701])) {
+                    $fmd0610Cache[$fmd07->fmd0701] = $this->db->table('fmd06')
+                        ->select('fmd0409,fmd0503')
+                        ->join('fmd04', 'fmd0401=fmd0603')
+                        ->join('fmd05', 'fmd0501=fmd0604')
+                        ->where('fmd0610', $fmd07->fmd0701)
+                        ->get()
+                        ->getResult();
+                }
                 foreach ($fmd02s as $fmd02) {
                     if (substr($fmd07->fmd0704, ($fmd02->fmd0203 - 1), 1) === '0') {
-                        $fmd06s = $this->db->table('fmd06')
-                            ->select('fmd0409,fmd0503')
-                            ->join('fmd04', 'fmd0401=fmd0603')
-                            ->join('fmd05', 'fmd0501=fmd0604')
-                            ->where('fmd0610', $fmd07->fmd0701)
-                            ->get()
-                            ->getResult();
-                        foreach ($fmd06s as $fmd06) {
+                        foreach ($fmd0610Cache[$fmd07->fmd0701] as $fmd06) {
                             if (isset($reportDetail[$fmd06->fmd0409])) {
                                 $row = $reportDetail[$fmd06->fmd0409];
                                 $fnSrc = 'src' . $fmd02->fmd0203 . '_' . $fmd06->fmd0503;
@@ -873,26 +876,28 @@ class IsoModel extends Model
             $reportMaster->id = $this->db->insertID();
         }
 
-        $detailIndex = 0;
+        $insertBatch = [];
+        $updateBatch = [];
         foreach ($reportDetail as $detail) {
             if (isset($detail->id)) {
-                $this->db->table($this->table . 'a')
-                    ->where('id', $detail->id)
-                    ->update((array)$detail);
-                if ($logSql && $detailIndex < 3) {
-                    log_message('info', '[SQL] UPDATE detail[' . $detailIndex . ']: ' . (string)$this->db->getLastQuery());
-                }
+                $updateBatch[] = (array)$detail;
             } else {
                 $detail->master_id = $reportMaster->id;
-                $this->db->table($this->table . 'a')->insert((array)$detail);
-                if ($logSql && $detailIndex < 3) {
-                    log_message('info', '[SQL] INSERT detail[' . $detailIndex . ']: ' . (string)$this->db->getLastQuery());
-                }
+                $insertBatch[] = (array)$detail;
             }
-            $detailIndex++;
         }
-        if ($logSql && $detailIndex > 3) {
-            log_message('info', '[SQL] ... 省略後續 detail SQL (共 ' . $detailIndex . ' 筆)');
+
+        if ($insertBatch) {
+            $this->db->table($this->table . 'a')->insertBatch($insertBatch);
+            if ($logSql) {
+                log_message('info', '[SQL] INSERT batch detail: ' . count($insertBatch) . ' 筆');
+            }
+        }
+        if ($updateBatch) {
+            $this->db->table($this->table . 'a')->updateBatch($updateBatch, 'id');
+            if ($logSql) {
+                log_message('info', '[SQL] UPDATE batch detail: ' . count($updateBatch) . ' 筆');
+            }
         }
 
         $this->db->transComplete();

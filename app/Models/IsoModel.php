@@ -877,10 +877,13 @@ class IsoModel extends Model
         }
 
         $insertBatch = [];
-        $updateBatch = [];
+        $updateCount = 0;
         foreach ($reportDetail as $detail) {
             if (isset($detail->id)) {
-                $updateBatch[] = (array)$detail;
+                $this->db->table($this->table . 'a')
+                    ->where('id', $detail->id)
+                    ->update((array)$detail);
+                $updateCount++;
             } else {
                 $detail->master_id = $reportMaster->id;
                 $insertBatch[] = (array)$detail;
@@ -888,16 +891,16 @@ class IsoModel extends Model
         }
 
         if ($insertBatch) {
-            $this->db->table($this->table . 'a')->insertBatch($insertBatch);
+            // 分批 insert，每 100 筆一次
+            foreach (array_chunk($insertBatch, 100) as $chunk) {
+                $this->db->table($this->table . 'a')->insertBatch($chunk);
+            }
             if ($logSql) {
                 log_message('info', '[SQL] INSERT batch detail: ' . count($insertBatch) . ' 筆');
             }
         }
-        if ($updateBatch) {
-            $this->db->table($this->table . 'a')->updateBatch($updateBatch, 'id');
-            if ($logSql) {
-                log_message('info', '[SQL] UPDATE batch detail: ' . count($updateBatch) . ' 筆');
-            }
+        if ($logSql && $updateCount) {
+            log_message('info', '[SQL] UPDATE detail: ' . $updateCount . ' 筆');
         }
 
         $this->db->transComplete();

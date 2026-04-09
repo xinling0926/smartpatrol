@@ -16,6 +16,11 @@ class IsoModel extends Model
     protected $message;
     protected $currentUser;
 
+    // N+1 查詢快取
+    private array $fieldDefineCache = [];
+    private array $fmd06Cache = [];
+    private array $fmd04CrossCache = [];
+
     public function __construct()
     {
         parent::__construct();
@@ -223,13 +228,63 @@ class IsoModel extends Model
      */
     public function getFieldDefine(int $fmd0601): ?object
     {
-        return $this->db->table('fmd06')
+        if (isset($this->fieldDefineCache[$fmd0601])) {
+            return $this->fieldDefineCache[$fmd0601];
+        }
+
+        $result = $this->db->table('fmd06')
             ->select('fmd0409,fmd0503,fmd0616,fmd0617')
             ->join('fmd04', 'fmd0401=fmd0603')
             ->join('fmd05', 'fmd0501=fmd0604')
             ->where('fmd0601', $fmd0601)
             ->get()
             ->getRow();
+
+        $this->fieldDefineCache[$fmd0601] = $result;
+        return $result;
+    }
+
+    /**
+     * 取得 fmd06 快取（開關欄位用）
+     */
+    private function getFmd06Cached(int $fmd0601, string $select = 'fmd0608'): ?object
+    {
+        $key = $fmd0601 . '_' . $select;
+        if (isset($this->fmd06Cache[$key])) {
+            return $this->fmd06Cache[$key];
+        }
+
+        $result = $this->db->table('fmd06')
+            ->select($select)
+            ->where('fmd0601', $fmd0601)
+            ->get()
+            ->getRow();
+
+        $this->fmd06Cache[$key] = $result;
+        return $result;
+    }
+
+    /**
+     * 取得跨版本欄位對應快取
+     */
+    private function getFmd04CrossVersion(int $fmd0101, string $fmd0617): ?object
+    {
+        $key = $fmd0101 . '_' . $fmd0617;
+        if (isset($this->fmd04CrossCache[$key])) {
+            return $this->fmd04CrossCache[$key];
+        }
+
+        $result = $this->db->table('fmd04')
+            ->select('fmd0409')
+            ->join('fmd01', 'fmd0402=fmd0101')
+            ->join('fmd06', 'fmd0401=fmd0603')
+            ->where('fmd0101', $fmd0101)
+            ->where('fmd0617', $fmd0617)
+            ->get()
+            ->getRow();
+
+        $this->fmd04CrossCache[$key] = $result;
+        return $result;
     }
 
     /**
@@ -238,6 +293,11 @@ class IsoModel extends Model
     public function generateReport(object $fmd01, string $date, ?string $fmd0203s = null): int|false
     {
         helper('common');
+
+        // 清除快取
+        $this->fieldDefineCache = [];
+        $this->fmd06Cache = [];
+        $this->fmd04CrossCache = [];
 
         // 開啟 SQL 日誌記錄
         $logSql = true;
@@ -405,11 +465,7 @@ class IsoModel extends Model
                 // 先查有沒有開關欄位
                 foreach ($rawData as $data) {
                     if ($data['fmd0606'] == 8) {
-                        $fmd06 = $this->db->table('fmd06')
-                            ->select('fmd0608')
-                            ->where('fmd0601', $data['fmd0601'])
-                            ->get()
-                            ->getRow();
+                        $fmd06 = $this->getFmd06Cached($data['fmd0601'], 'fmd0608');
                         $opt = explode(PHP_EOL, $fmd06->fmd0608);
                         $value = count($data['value']) ? array_keys($data['value'][0])[0] : '';
                         if (array_key_exists(1, $opt) && $value == $opt[1]) {
@@ -432,14 +488,7 @@ class IsoModel extends Model
                         }
                         $row = $reportDetail[$itemInfo->fmd0409];
                     } else {
-                        $fmd04 = $this->db->table('fmd04')
-                            ->select('fmd0409')
-                            ->join('fmd01', 'fmd0402=fmd0101')
-                            ->join('fmd06', 'fmd0401=fmd0603')
-                            ->where('fmd0101', $reportMaster->fmd0101)
-                            ->where('fmd0617', $itemInfo->fmd0617)
-                            ->get()
-                            ->getRow();
+                        $fmd04 = $this->getFmd04CrossVersion($reportMaster->fmd0101, $itemInfo->fmd0617);
                         if ($fmd04) {
                             if (!isset($reportDetail[$fmd04->fmd0409])) {
                                 continue;
@@ -491,11 +540,7 @@ class IsoModel extends Model
 
                     // 開關類型記錄
                     if ($data['fmd0606'] == 8) {
-                        $fmd06 = $this->db->table('fmd06')
-                            ->select('fmd0608,fmd0618')
-                            ->where('fmd0601', $data['fmd0601'])
-                            ->get()
-                            ->getRow();
+                        $fmd06 = $this->getFmd06Cached($data['fmd0601'], 'fmd0608,fmd0618');
                         if ($fmd06 && $fmd06->fmd0618) {
                             $s = explode("\n", $fmd06->fmd0608);
                             if (isset($switches[$fmd06->fmd0618])) {

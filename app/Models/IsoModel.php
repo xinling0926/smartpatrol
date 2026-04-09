@@ -942,16 +942,24 @@ class IsoModel extends Model
         $reportDetail = $this->getDetailByMaster($reportMaster->id);
         $commentData = [];
 
+        $commentFmd02Cache = [];
+        $commentFmd07Cache = [];
         if ($comments = json_decode($reportMaster->comments)) {
             foreach ($comments as $fmd0201 => $fmd0201v) {
-                $fmd02s = $fmd02Model->getBy(['fmd0201' => $fmd0201], 1);
+                if (!isset($commentFmd02Cache[$fmd0201])) {
+                    $commentFmd02Cache[$fmd0201] = $fmd02Model->getBy(['fmd0201' => $fmd0201], 1);
+                }
+                $fmd02s = $commentFmd02Cache[$fmd0201];
                 if ($fmd02s) {
                     $fmd0203 = $fmd02s->fmd0203;
                 } else {
                     $fmd0203 = 'all';
                 }
                 foreach ($fmd0201v as $fmd0701v => $fmd0701s) {
-                    $fmd07s = $fmd07Model->getBy(['fmd0701' => $fmd0701v], 1);
+                    if (!isset($commentFmd07Cache[$fmd0701v])) {
+                        $commentFmd07Cache[$fmd0701v] = $fmd07Model->getBy(['fmd0701' => $fmd0701v], 1);
+                    }
+                    $fmd07s = $commentFmd07Cache[$fmd0701v];
                     if ($fmd07s) {
                         $fmd0707 = (empty($fmd07s->fmd0707)) ? $fmd07s->fmd0701 : $fmd07s->fmd0707;
                         $commentData[$fmd0203][$fmd0707] = count($fmd0701s);
@@ -1055,6 +1063,7 @@ class IsoModel extends Model
         $colCount = count($fmd03s);
         $checkedCount = [];
         $enableColumnRate = true;
+        $fmd07Cache = [];
 
         foreach ($reportDetail as $row) {
             $body .= "<tr><td>" . ($row->line + 1) . "</td>";
@@ -1159,7 +1168,10 @@ class IsoModel extends Model
                     // 註記圖示
                     if ($commentData && isset($fmd0701IdList[$row->line])) {
                         $fmd0701 = $fmd0701IdList[$row->line]->fmd0701;
-                        $fmd07s = $fmd07Model->getBy(['fmd0701' => $fmd0701], 1);
+                        if (!isset($fmd07Cache[$fmd0701])) {
+                            $fmd07Cache[$fmd0701] = $fmd07Model->getBy(['fmd0701' => $fmd0701], 1);
+                        }
+                        $fmd07s = $fmd07Cache[$fmd0701];
                         if ($fmd07s) {
                             $fmd0203 = ($fmd02->fmd0201 == 'all') ? 'all' : $fmd02->fmd0203;
                             $fmd0707 = (empty($fmd07s->fmd0707)) ? $fmd07s->fmd0701 : $fmd07s->fmd0707;

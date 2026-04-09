@@ -876,31 +876,20 @@ class IsoModel extends Model
             $reportMaster->id = $this->db->insertID();
         }
 
-        $insertBatch = [];
-        $updateCount = 0;
+        $allData = [];
         foreach ($reportDetail as $detail) {
-            if (isset($detail->id)) {
-                $this->db->table($this->table . 'a')
-                    ->where('id', $detail->id)
-                    ->update((array)$detail);
-                $updateCount++;
-            } else {
+            if (!isset($detail->id)) {
                 $detail->master_id = $reportMaster->id;
-                $insertBatch[] = (array)$detail;
             }
+            $allData[] = (array)$detail;
         }
 
-        if ($insertBatch) {
-            // 分批 insert，每 100 筆一次
-            foreach (array_chunk($insertBatch, 100) as $chunk) {
-                $this->db->table($this->table . 'a')->insertBatch($chunk);
-            }
-            if ($logSql) {
-                log_message('info', '[SQL] INSERT batch detail: ' . count($insertBatch) . ' 筆');
-            }
+        // 分批 upsert（INSERT ... ON DUPLICATE KEY UPDATE），每 50 筆一次
+        foreach (array_chunk($allData, 50) as $chunk) {
+            $this->db->table($this->table . 'a')->upsertBatch($chunk);
         }
-        if ($logSql && $updateCount) {
-            log_message('info', '[SQL] UPDATE detail: ' . $updateCount . ' 筆');
+        if ($logSql) {
+            log_message('info', '[SQL] UPSERT detail: ' . count($allData) . ' 筆 (分 ' . ceil(count($allData) / 50) . ' 批)');
         }
 
         $this->db->transComplete();

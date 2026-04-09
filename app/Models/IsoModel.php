@@ -459,6 +459,57 @@ class IsoModel extends Model
             log_message('info', '[SQL] 巡檢紀錄筆數: ' . count($pad01s));
         }
 
+        // 批次預載入：收集所有 fmd0601 ID，一次查完
+        $allFmd0601s = [];
+        foreach ($pad01s as $pad01) {
+            if ($rawData = json_decode($pad01->pad0107, true)) {
+                foreach ($rawData as $data) {
+                    $allFmd0601s[$data['fmd0601']] = true;
+                }
+            }
+        }
+        if ($allFmd0601s) {
+            $fmd0601Ids = implode(',', array_keys($allFmd0601s));
+
+            // 預載入 fieldDefine
+            $rows = $this->db->query("SELECT fmd0601, fmd0409, fmd0503, fmd0616, fmd0617 FROM fmd06 JOIN fmd04 ON fmd0401=fmd0603 JOIN fmd05 ON fmd0501=fmd0604 WHERE fmd0601 IN ({$fmd0601Ids})")->getResult();
+            foreach ($rows as $row) {
+                $cached = new \stdClass();
+                $cached->fmd0409 = $row->fmd0409;
+                $cached->fmd0503 = $row->fmd0503;
+                $cached->fmd0616 = $row->fmd0616;
+                $cached->fmd0617 = $row->fmd0617;
+                $this->fieldDefineCache[$row->fmd0601] = $cached;
+            }
+
+            // 預載入 fmd06（開關欄位用）
+            $rows = $this->db->query("SELECT fmd0601, fmd0608, fmd0618 FROM fmd06 WHERE fmd0601 IN ({$fmd0601Ids})")->getResult();
+            foreach ($rows as $row) {
+                $cached1 = new \stdClass();
+                $cached1->fmd0608 = $row->fmd0608;
+                $this->fmd06Cache[$row->fmd0601 . '_fmd0608'] = $cached1;
+
+                $cached2 = new \stdClass();
+                $cached2->fmd0608 = $row->fmd0608;
+                $cached2->fmd0618 = $row->fmd0618;
+                $this->fmd06Cache[$row->fmd0601 . '_fmd0608,fmd0618'] = $cached2;
+            }
+
+            // 預載入跨版本對應
+            if (isset($reportMaster->fmd0101)) {
+                $rows = $this->db->query("SELECT fmd0617, fmd0409 FROM fmd04 JOIN fmd01 ON fmd0402=fmd0101 JOIN fmd06 ON fmd0401=fmd0603 WHERE fmd0101={$reportMaster->fmd0101}")->getResult();
+                foreach ($rows as $row) {
+                    $cached = new \stdClass();
+                    $cached->fmd0409 = $row->fmd0409;
+                    $this->fmd04CrossCache[$reportMaster->fmd0101 . '_' . $row->fmd0617] = $cached;
+                }
+            }
+
+            if ($logSql) {
+                log_message('info', '[SQL] 預載入完成: fieldDefine=' . count($this->fieldDefineCache) . ', fmd06=' . count($this->fmd06Cache) . ', fmd04Cross=' . count($this->fmd04CrossCache));
+            }
+        }
+
         foreach ($pad01s as $pad01) {
             if ($rawData = json_decode($pad01->pad0107, true)) {
                 $powerOff = null;

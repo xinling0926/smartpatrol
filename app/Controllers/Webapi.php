@@ -343,7 +343,7 @@ class Webapi extends BaseController
                                 $this->user->addLoginLog($identity, 1, 3, $user->sys0101);
                             } else {
                                 // Department restriction check (CI3 compatible)
-                                $depId = $this->ent10Model->getSubDepartmentId($dev01->dev0103 ?? '');
+                                $depId = $this->ent10Model->getSubDepartmentId((int)($dev01->dev0103 ?? 0));
                                 $depId = empty($depId) ? ($dev01->dev0103 ?? '') : sprintf("%s,%s", $dev01->dev0103, $depId);
 
                                 if ((int)($dev01->dev0103 ?? 0) && !in_array($user->sys0110, explode(",", $depId))) {

@@ -101,8 +101,12 @@ $routes->group('form-item', static function ($routes) {
     $routes->match(['GET', 'POST'], 'edit-fmd01/(:num)', 'FormItem::editFmd01/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd02/(:num)', 'FormItem::editFmd02/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd04/(:num)', 'FormItem::editFmd04/$1');
+    $routes->match(['GET', 'POST'], 'add-fmd04/(:num)', 'FormItem::addFmd04/$1');
     $routes->match(['GET', 'POST'], 'add-fmd04-sub/(:num)', 'FormItem::addFmd04Sub/$1');
     $routes->match(['GET', 'POST'], 'add-fmd04-first/(:num)', 'FormItem::addFmd04First/$1');
+    $routes->match(['GET', 'POST'], 'copy-fmd04', 'FormItem::copyFmd04');
+    $routes->match(['GET', 'POST'], 'copy-fmd06', 'FormItem::copyFmd06');
+    $routes->match(['GET', 'POST'], 'order-fmd04', 'FormItem::orderFmd04');
     $routes->match(['GET', 'POST'], 'edit-fmd06/(:num)', 'FormItem::editFmd06/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd07/(:num)', 'FormItem::editFmd07/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd08/(:num)', 'FormItem::editFmd08/$1');
@@ -498,8 +502,11 @@ $routes->group('formitem', static function ($routes) {
     $routes->match(['GET', 'POST'], 'delete_fmd09/', 'FormItem::deleteFmd09');
     $routes->match(['GET', 'POST'], 'delete_fmd0906', 'FormItem::deleteFmd0906');
     $routes->match(['GET', 'POST'], 'delete_fmd0906/', 'FormItem::deleteFmd0906');
+    $routes->match(['GET', 'POST'], 'copy_fmd04', 'FormItem::copyFmd04');
+    $routes->match(['GET', 'POST'], 'copy_fmd04/', 'FormItem::copyFmd04');
     $routes->match(['GET', 'POST'], 'copy_fmd06', 'FormItem::copyFmd06');
     $routes->match(['GET', 'POST'], 'copy_fmd06/', 'FormItem::copyFmd06');
+    $routes->match(['GET', 'POST'], 'add_fmd04/(:num)', 'FormItem::addFmd04/$1');
     $routes->match(['GET', 'POST'], 'order_fmd04', 'FormItem::orderFmd04');
     $routes->match(['GET', 'POST'], 'order_fmd04/', 'FormItem::orderFmd04');
     $routes->match(['GET', 'POST'], 'revert', 'FormItem::revert');

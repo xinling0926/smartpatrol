@@ -142,6 +142,12 @@ $routes->group('enterprise', static function ($routes) {
     $routes->match(['GET', 'POST'], 'upload_logo/', 'Enterprise::uploadLogo');
 });
 
+// Update Routes
+$routes->group('update', static function ($routes) {
+    $routes->get('/', 'Update::index');
+    $routes->post('upload', 'Update::upload');
+});
+
 // System Setting Routes
 $routes->group('system-setting', static function ($routes) {
     $routes->get('/', 'SystemSetting::index');
@@ -346,12 +352,21 @@ $routes->group('device-log', static function ($routes) {
 // Operation Log Routes
 $routes->group('operation-log', static function ($routes) {
     $routes->get('/', 'OperationLog::index');
+    $routes->match(['GET', 'POST'], 'query', 'OperationLog::query');
     $routes->match(['GET', 'POST'], 'query/(:num)', 'OperationLog::query/$1');
 });
 
 // Operation Log Routes (underscore alias for CI3 compatibility)
 $routes->group('operation_log', static function ($routes) {
     $routes->get('/', 'OperationLog::index');
+    $routes->match(['GET', 'POST'], 'query', 'OperationLog::query');
+    $routes->match(['GET', 'POST'], 'query/(:num)', 'OperationLog::query/$1');
+});
+
+// Operation Log Routes (no separator - for JavaScript URL building)
+$routes->group('operationlog', static function ($routes) {
+    $routes->get('/', 'OperationLog::index');
+    $routes->match(['GET', 'POST'], 'query', 'OperationLog::query');
     $routes->match(['GET', 'POST'], 'query/(:num)', 'OperationLog::query/$1');
 });
 

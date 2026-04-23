@@ -437,6 +437,25 @@ class BaseModel extends Model
     }
 
     /**
+     * 覆寫 CI4 的 save() 方法
+     * 確保更新時也會自動寫入 {table}z3 / {table}z4 (更新人員/時間)
+     * 讓手機端的增量同步機制能正確偵測資料變更
+     *
+     * 排除沒有 z4 欄位的資料表（如 tag01）
+     */
+    public function save($data): bool
+    {
+        // 沒有 z4 欄位的表，走 CI4 原生 save()
+        $tablesWithoutZ4 = ['tag01'];
+        if (in_array($this->table, $tablesWithoutZ4, true)) {
+            return parent::save($data);
+        }
+
+        $result = $this->saveData($data);
+        return $result !== false;
+    }
+
+    /**
      * 開始交易
      */
     public function transStart(): void

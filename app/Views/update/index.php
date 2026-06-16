@@ -53,11 +53,11 @@ function doUpload() {
     xhr.onload = function() {
         try {
             var res = JSON.parse(xhr.responseText);
-            var log = res.data && res.data.log ? res.data.log.join('\n') : '';
+            var log = res.log ? res.log.join('\n') : '';
             if (res.message === 'OK') {
-                log += '\n\n✓ 更新成功！備份位置: ' + (res.data.backup || '');
+                log += '\n\n✓ 更新成功！備份位置: ' + (res.backup || '');
             } else {
-                log += '\n\n✗ 更新失敗: ' + (res.data.description || '');
+                log += '\n\n✗ 更新失敗: ' + (res.description || res.message || '');
             }
             document.getElementById('result_log').textContent = log;
         } catch (e) {

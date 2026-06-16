@@ -112,7 +112,7 @@
 					echo "<td{$rowspan}>";
 					$s = [];
 					foreach (explode(',', $fmd21->fmd2105) as $item) {
-						$s[] = $fmd02s[$item];
+						if (isset($fmd02s[$item])) { $s[] = $fmd02s[$item]; }
 					}
 					echo implode(',', $s);
 					echo "</td>";
@@ -126,7 +126,7 @@
 				foreach ($fmd22s as $fmd22) {
 					echo "<tr><td>{$fmd22->fmd2204}</td><td class='a' onclick='edit_dialog(this)'";
 					echo " data-action='edit_fmd22' data-id='{$fmd22->fmd2201}'>{$fmd22->fmd2205}</td>";
-					echo "<td>{$ent10s[$fmd22->fmd2206]}</td><td>{$fmd22->fmd2207}</td></tr>";
+					echo "<td>" . ($ent10s[$fmd22->fmd2206] ?? '') . "</td><td>{$fmd22->fmd2207}</td></tr>";
 				}
 				echo "</table>";
 			}

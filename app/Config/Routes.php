@@ -148,6 +148,11 @@ $routes->group('update', static function ($routes) {
     $routes->post('upload', 'Update::upload');
 });
 
+// Log Viewer Routes
+// $routes->group('logviewer', static function ($routes) {
+//     $routes->get('/', 'LogViewer::index');
+// });
+
 // System Setting Routes
 $routes->group('system-setting', static function ($routes) {
     $routes->get('/', 'SystemSetting::index');

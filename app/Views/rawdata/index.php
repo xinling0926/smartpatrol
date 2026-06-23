@@ -15,7 +15,7 @@
 				<?= form_dropdown_input('pad0105s', $fmd02s, null, 'width:90px;padding-left:0px;padding-right:0px;') ?>
 				<?= form_dropdown_input('pad0103', $dev01s, null, 'width:90px;padding-left:0px;padding-right:0px;') ?>
 				<?= form_text_input('pad0109s', isset($options['pad0109s']) ? $options['pad0109s'] : '', 'width:100px', ['placeholder' => lang('search_input_pad0109s_placeholder'), 'class' => 'date']) ?>
-				<?= form_text_input('pad0109e', '', 'width:100px', ['placeholder' => lang('search_input_pad0109e_placeholder'), 'class' => 'date']) ?>
+				<?= form_text_input('pad0109e', isset($options['pad0109e']) ? $options['pad0109e'] : '', 'width:100px', ['placeholder' => lang('search_input_pad0109e_placeholder'), 'class' => 'date']) ?>
 				<?= form_dropdown_input('orders', $orders, null, 'width:60px;padding-left:0px;padding-right:0px;') ?>
 				<button class="btn btn-primary" type="submit">
 					<i class="fa fa-search"></i><?= lang('toolbar_search') ?></button>

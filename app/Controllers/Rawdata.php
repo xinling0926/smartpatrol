@@ -28,7 +28,15 @@ class Rawdata extends AdminController
     {
         $stime = microtime(true);
         $ent0101 = $this->session->get('ent0101');
-        $options = ['ent1002' => $ent0101, 'ent1007' => 1];
+        // 預設只查最近 7 天，避免全表掃描
+        $defaultStart = date('Y-m-d', strtotime('-7 days'));
+        $defaultEnd = date('Y-m-d');
+        $options = [
+            'ent1002' => $ent0101,
+            'ent1007' => 1,
+            'pad0109s' => $defaultStart,
+            'pad0109e' => $defaultEnd,
+        ];
         $pageSize = $this->getPageSize();
         $totalRows = $this->pad01Model->countBy($options);
         $etime = microtime(true);
@@ -105,6 +113,12 @@ class Rawdata extends AdminController
             if ($v1 === '') {
                 unset($option[$k1]);
             }
+        }
+
+        // 沒指定日期範圍時，預設查最近 7 天，避免全表掃描
+        if (!isset($option['pad0109s']) && !isset($option['pad0109e'])) {
+            $option['pad0109s'] = date('Y-m-d', strtotime('-7 days'));
+            $option['pad0109e'] = date('Y-m-d');
         }
 
         $orders = 'pad0109 desc';

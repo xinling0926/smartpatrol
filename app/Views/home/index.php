@@ -66,93 +66,6 @@
 		</div>
 	</div>
 </div>
-
-<div class="row">
-	<div class="col-lg-6">
-        <!-- 今日當班漏檢與異常 -->
-        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}&onduty=true") ?>'"><i class="fa fa-fw <?= $fa_toggle_1 ?>"></i> <?= $btnToggleString_1 ?></button>
-        <!-- 今日漏檢與異常 -->
-        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}") ?>'"><i class="fa fa-fw <?= $fa_toggle_2 ?>"></i> <?= $btnToggleString_2 ?></button>
-        <!-- 昨日漏檢與異常 -->
-        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$yesterday}") ?>'"><i class="fa fa-fw <?= $fa_toggle_3 ?>"></i> <?= $btnToggleString_3 ?></button>
-    </div>
-</div>
-
-<div class="row">
-	<?php if (isset($rejected_list) and $rejected_list): ?>
-		<div class="col-lg-6">
-			<?= view('home/rejected_list', get_defined_vars()) ?>
-		</div>
-	<?php endif ?>
-
-	<?php
-	$permissions = session('permissions') ?? '';
-	if (is_array($permissions)) {
-		$permArray = $permissions;
-	} else {
-		$permArray = $permissions ? explode(",", $permissions) : [];
-	}
-	if (isset($repair) && (in_array(23, $permArray) || in_array(30, $permArray) || in_array(31, $permArray))): ?>
-		<div class="col-lg-6">
-			<?= view('home/repair_list', get_defined_vars()) ?>
-		</div>
-	<?php endif; ?>
-</div>
-
-<?php if (isset($miss)) : ?>
-	<div class="row">
-		<?php foreach ($miss as $ent10) : ?>
-			<div class="col-lg-6">
-				<div class="box box-warning">
-					<div class="box-header">
-						<h3 class="box-title"><?= $ent10->ent1004 ?> <?=lang('Home.table_title')?></h3>
-					</div>
-					<div class="box-body">
-						<table class="table">
-							<thead style="white-space: nowrap;">
-							<tr>
-								<th><?=lang('f_fmd0104')?></th>
-								<th><?=lang('f_fmd0105')?></th>
-								<th><?=lang('Home.f_date')?></th>
-								<th><?=lang('Home.f_error_count')?></th>
-								<th><?=lang('Home.f_error_rate')?></th>
-								<th><?=lang('Home.f_miss_count')?></th>
-								<th><?=lang('Home.f_miss_rate')?></th>
-							</tr>
-							</thead>
-							<tbody>
-							<?php if (is_array($ent10->fmd01s) && count($ent10->fmd01s)) : ?>
-							<?php foreach ($ent10->fmd01s as $fmd01) : ?>
-								<tr>
-									<td><?= $fmd01->fmd0104 ?></td>
-									<td style="white-space: nowrap;"><?= $fmd0105_opt[$fmd01->fmd0105] ?? '' ?></td>
-									<?php if (isset($fmd01->iso)) : ?>
-										<td style="white-space: nowrap;"><a href="<?= base_url('query_report/index/' . $fmd01->fmd0101 . '-' . $fmd01->iso->id) ?>">
-												<?= $fmd01->iso->date ?></a></td>
-										<td class=" text-right"><?= $fmd01->iso->error_count ?></td>
-										<td class=" text-right"><?= $fmd01->error_rate ?>%</td>
-										<td class="text-right"><?= $fmd01->iso->miss_count ?></td>
-										<td class="text-right"><?= $fmd01->miss_rate ?>%</td>
-									<?php else : ?>
-										<td style="white-space: nowrap;"><?= $fmd01->date ?></td>
-										<td colspan="4" class="bg-warning"><?=lang('Home.not_data')?></td>
-									<?php endif ?>
-								</tr>
-							<?php endforeach ?>
-							<?php else : ?>
-								<tr>
-									<td colspan="7" class="bg-warning"><?=lang('Home.not_data')?></td>
-								</tr>
-							<?php endif ?>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		<?php endforeach ?>
-	</div>
-<?php endif ?>
-
 <?php if (!empty($chartpermission)):?>
 <?php $defY=date('Y')-1911; $defM=(int)date('m');?>
 <div class="row">
@@ -369,3 +282,90 @@
 		};
 </script>
 <?php endif;?>
+
+
+<div class="row">
+	<div class="col-lg-6">
+        <!-- 今日當班漏檢與異常 -->
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}&onduty=true") ?>'"><i class="fa fa-fw <?= $fa_toggle_1 ?>"></i> <?= $btnToggleString_1 ?></button>
+        <!-- 今日漏檢與異常 -->
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$today}") ?>'"><i class="fa fa-fw <?= $fa_toggle_2 ?>"></i> <?= $btnToggleString_2 ?></button>
+        <!-- 昨日漏檢與異常 -->
+        <button class="btn btn-default" onclick="window.location.href='<?=base_url("home/index?toggle_date={$yesterday}") ?>'"><i class="fa fa-fw <?= $fa_toggle_3 ?>"></i> <?= $btnToggleString_3 ?></button>
+    </div>
+</div>
+
+<div class="row">
+	<?php if (isset($rejected_list) and $rejected_list): ?>
+		<div class="col-lg-6">
+			<?= view('home/rejected_list', get_defined_vars()) ?>
+		</div>
+	<?php endif ?>
+
+	<?php
+	$permissions = session('permissions') ?? '';
+	if (is_array($permissions)) {
+		$permArray = $permissions;
+	} else {
+		$permArray = $permissions ? explode(",", $permissions) : [];
+	}
+	if (isset($repair) && (in_array(23, $permArray) || in_array(30, $permArray) || in_array(31, $permArray))): ?>
+		<div class="col-lg-6">
+			<?= view('home/repair_list', get_defined_vars()) ?>
+		</div>
+	<?php endif; ?>
+</div>
+
+<?php if (isset($miss)) : ?>
+	<div class="row">
+		<?php foreach ($miss as $ent10) : ?>
+			<div class="col-lg-6">
+				<div class="box box-warning">
+					<div class="box-header">
+						<h3 class="box-title"><?= $ent10->ent1004 ?> <?=lang('Home.table_title')?></h3>
+					</div>
+					<div class="box-body">
+						<table class="table">
+							<thead style="white-space: nowrap;">
+							<tr>
+								<th><?=lang('f_fmd0104')?></th>
+								<th><?=lang('f_fmd0105')?></th>
+								<th><?=lang('Home.f_date')?></th>
+								<th><?=lang('Home.f_error_count')?></th>
+								<th><?=lang('Home.f_error_rate')?></th>
+								<th><?=lang('Home.f_miss_count')?></th>
+								<th><?=lang('Home.f_miss_rate')?></th>
+							</tr>
+							</thead>
+							<tbody>
+							<?php if (is_array($ent10->fmd01s) && count($ent10->fmd01s)) : ?>
+							<?php foreach ($ent10->fmd01s as $fmd01) : ?>
+								<tr>
+									<td><?= $fmd01->fmd0104 ?></td>
+									<td style="white-space: nowrap;"><?= $fmd0105_opt[$fmd01->fmd0105] ?? '' ?></td>
+									<?php if (isset($fmd01->iso)) : ?>
+										<td style="white-space: nowrap;"><a href="<?= base_url('query_report/index/' . $fmd01->fmd0101 . '-' . $fmd01->iso->id) ?>">
+												<?= $fmd01->iso->date ?></a></td>
+										<td class=" text-right"><?= $fmd01->iso->error_count ?></td>
+										<td class=" text-right"><?= $fmd01->error_rate ?>%</td>
+										<td class="text-right"><?= $fmd01->iso->miss_count ?></td>
+										<td class="text-right"><?= $fmd01->miss_rate ?>%</td>
+									<?php else : ?>
+										<td style="white-space: nowrap;"><?= $fmd01->date ?></td>
+										<td colspan="4" class="bg-warning"><?=lang('Home.not_data')?></td>
+									<?php endif ?>
+								</tr>
+							<?php endforeach ?>
+							<?php else : ?>
+								<tr>
+									<td colspan="7" class="bg-warning"><?=lang('Home.not_data')?></td>
+								</tr>
+							<?php endif ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		<?php endforeach ?>
+	</div>
+<?php endif ?>

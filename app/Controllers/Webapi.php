@@ -989,45 +989,65 @@ class Webapi extends BaseController
             return $this->jsonResponse($json);
         }
 
-        $extractPath = FCPATH . 'data/pad0203/' . $dev01->dev0101;
-        if (!file_exists($extractPath) && !mkdir($extractPath, 0777, true)) {
+        // 解壓到「隔離暫存夾」，不直接信任 zip 內層路徑。
+        // 修正：舊寫法 extractTo(data/pad0203/{裝置}) 會把 zip 內已含的
+        //       data/pad0203/{裝置}/ 前綴再疊一次，造成多一層路徑；同時避免 Zip Slip。
+        $tmpDir = FCPATH . 'data/temp/unzip_' . $dev01->dev0101 . '_' . $time . '_' . bin2hex(random_bytes(4));
+        if (!file_exists($tmpDir) && !mkdir($tmpDir, 0777, true)) {
             $json['info'] = lang('Webapi.mkdir_fail');
             $zip->close();
             ob_end_clean();
             return $this->jsonResponse($json);
         }
 
-        $zip->extractTo($extractPath);
-        log_message('info', '[Webapi] addpad01multi - ZIP extracted to: ' . $extractPath);
+        $zip->extractTo($tmpDir);
+        $zip->close();
+        log_message('info', '[Webapi] addpad01multi - ZIP extracted to temp: ' . $tmpDir);
 
-        // 尋找資料檔案 - 支援兩種結構：
-        // 1. 根目錄的 data.txt
-        // 2. data/ 子目錄下的 *.txt 檔案（CI3 格式：0000.txt, 0001.txt...）
-        $dataFiles = [];
-        $dataFile = $extractPath . '/data.txt';
+        // 影像最終要放的正規平面夾：data/pad0203/{裝置}/
+        $destDir = FCPATH . 'data/pad0203/' . $dev01->dev0101;
+        if (!file_exists($destDir) && !mkdir($destDir, 0777, true)) {
+            $json['info'] = lang('Webapi.mkdir_fail');
+            $this->rrmdir($tmpDir);
+            ob_end_clean();
+            return $this->jsonResponse($json);
+        }
 
-        if (file_exists($dataFile)) {
-            // 結構 1: 根目錄的 data.txt
-            $dataFiles[] = $dataFile;
-            log_message('info', '[Webapi] addpad01multi - Found data.txt in root');
-        } else {
-            // 結構 2: data/ 子目錄下的 *.txt 檔案
-            $dataDir = $extractPath . '/data';
-            if (is_dir($dataDir)) {
-                $txtFiles = glob($dataDir . '/*.txt');
-                if (!empty($txtFiles)) {
-                    // 按檔名排序（0000.txt, 0001.txt...）
-                    sort($txtFiles, SORT_STRING);
-                    $dataFiles = $txtFiles;
-                    log_message('info', '[Webapi] addpad01multi - Found ' . count($txtFiles) . ' txt files in data/ folder');
-                }
+        // 遞迴掃描暫存夾（先收集路徑，避免邊掃邊搬影響迭代器）：
+        //   - 影像(jpg/jpeg/png/gif)：只取「檔名」搬到 $destDir（不管 zip 內疊了幾層）
+        //   - 資料檔：data.txt 或 CI3 格式 NNNN.txt（0000.txt, 0001.txt...）
+        $allFiles = [];
+        $rii = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($tmpDir, \FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($rii as $fileInfo) {
+            if ($fileInfo->isFile()) {
+                $allFiles[] = $fileInfo->getPathname();
             }
         }
+
+        $dataFiles  = [];
+        $imageCount = 0;
+        foreach ($allFiles as $full) {
+            $name = basename($full);
+            $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'], true)) {
+                $target = $destDir . '/' . $name;
+                if (@rename($full, $target) || (@copy($full, $target) && @unlink($full))) {
+                    $imageCount++;
+                }
+            } elseif ($name === 'data.txt' || preg_match('/^\d+\.txt$/', $name)) {
+                $dataFiles[] = $full;
+            }
+        }
+        sort($dataFiles, SORT_STRING);
+        log_message('info', '[Webapi] addpad01multi - normalized ' . $imageCount . ' image(s), found ' . count($dataFiles) . ' data file(s)');
 
         if (empty($dataFiles)) {
             log_message('error', '[Webapi] addpad01multi - No data files found in ZIP');
             $json['info'] = lang('Webapi.data_file_not_found');
-            $zip->close();
+            $this->rrmdir($tmpDir);
             ob_end_clean();
             return $this->jsonResponse($json);
         }
@@ -1063,13 +1083,7 @@ class Webapi extends BaseController
             log_message('warning', '[Webapi] addpad01multi - No valid records found');
             $json['status'] = 'success';
             $json['info'] = sprintf(lang('Webapi.upload_multi_success'), 0);
-            $zip->close();
-            // 清理資料檔案
-            foreach ($dataFiles as $file) {
-                if (file_exists($file)) {
-                    unlink($file);
-                }
-            }
+            $this->rrmdir($tmpDir);
             ob_end_clean();
             return $this->jsonResponse($json);
         }
@@ -1111,13 +1125,8 @@ class Webapi extends BaseController
         $json['status'] = 'success';
         $json['info'] = sprintf(lang('Webapi.upload_multi_success'), $successCount);
 
-        // 清理資料檔案
-        foreach ($dataFiles as $file) {
-            if (file_exists($file)) {
-                unlink($file);
-            }
-        }
-        $zip->close();
+        // 清理暫存夾（資料檔與殘留結構一併移除；影像已搬到正規夾）
+        $this->rrmdir($tmpDir);
 
         $this->dev01Model->update($dev0101, ['dev0109' => date('Y-m-d H:i:s')]);
 
@@ -1130,6 +1139,28 @@ class Webapi extends BaseController
         log_message('info', '[Webapi] addpad01multi end - response: ' . json_encode($json));
 
         return $this->jsonResponse($json);
+    }
+
+    /**
+     * 遞迴刪除資料夾（清理解壓暫存夾用）
+     */
+    private function rrmdir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                @rmdir($item->getPathname());
+            } else {
+                @unlink($item->getPathname());
+            }
+        }
+        @rmdir($dir);
     }
 
     /**

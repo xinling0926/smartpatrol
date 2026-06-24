@@ -239,7 +239,9 @@ class SystemSetting extends AdminController
                 $result['versionCode'] = $manifest->getVersionCode();
                 $result['versionName'] = $manifest->getVersionName();
                 return $result;
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // 解析失敗（含 ZipArchive 暫存目錄不可寫的 ValueError）不應中斷上傳，
+                // 版本資訊留空，由管理員後台手動填寫
                 log_message('error', 'APK Parse Error: ' . $e->getMessage());
             }
         }

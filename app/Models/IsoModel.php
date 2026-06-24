@@ -891,12 +891,27 @@ class IsoModel extends Model
         }
 
         if ($insertBatch) {
-            // 分批 insert，每 100 筆一次
-            foreach (array_chunk($insertBatch, 100) as $chunk) {
+            // 各列的動態欄位不一致（稀疏），insertBatch 要求欄位數一致，
+            // 故以資料表實際欄位為基準，將每列補齊（缺的補 null），再批次寫入
+            $tableFields = $this->db->getFieldNames($this->table . 'a');
+            $template = [];
+            foreach ($tableFields as $f) {
+                if ($f === 'id') {
+                    continue; // 跳過自動遞增主鍵
+                }
+                $template[$f] = null;
+            }
+
+            $normalized = [];
+            foreach ($insertBatch as $row) {
+                $normalized[] = array_merge($template, array_intersect_key($row, $template));
+            }
+
+            foreach (array_chunk($normalized, 100) as $chunk) {
                 $this->db->table($this->table . 'a')->insertBatch($chunk);
             }
             if ($logSql) {
-                log_message('info', '[SQL] INSERT batch detail: ' . count($insertBatch) . ' 筆');
+                log_message('info', '[SQL] INSERT batch detail: ' . count($normalized) . ' 筆');
             }
         }
         if ($logSql && $updateCount) {

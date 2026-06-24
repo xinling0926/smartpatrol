@@ -148,6 +148,28 @@ $routes->group('update', static function ($routes) {
     $routes->post('upload', 'Update::upload');
 });
 
+// EUI Settings Routes
+$routes->group('eui_settings', static function ($routes) {
+    $routes->get('/', 'EuiSettings::index');
+    $routes->match(['GET', 'POST'], 'query', 'EuiSettings::query');
+    $routes->match(['GET', 'POST'], 'query/(:num)', 'EuiSettings::query/$1');
+    $routes->get('detail/(:num)', 'EuiSettings::detail/$1');
+    $routes->match(['GET', 'POST'], 'edit/(:num)', 'EuiSettings::edit/$1');
+    $routes->match(['GET', 'POST'], 'edit', 'EuiSettings::edit');
+    $routes->match(['GET', 'POST'], 'delete', 'EuiSettings::delete');
+});
+
+// EUI Settings Routes (no separator alias)
+$routes->group('euisettings', static function ($routes) {
+    $routes->get('/', 'EuiSettings::index');
+    $routes->match(['GET', 'POST'], 'query', 'EuiSettings::query');
+    $routes->match(['GET', 'POST'], 'query/(:num)', 'EuiSettings::query/$1');
+    $routes->get('detail/(:num)', 'EuiSettings::detail/$1');
+    $routes->match(['GET', 'POST'], 'edit/(:num)', 'EuiSettings::edit/$1');
+    $routes->match(['GET', 'POST'], 'edit', 'EuiSettings::edit');
+    $routes->match(['GET', 'POST'], 'delete', 'EuiSettings::delete');
+});
+
 // Log Viewer Routes
 // $routes->group('logviewer', static function ($routes) {
 //     $routes->get('/', 'LogViewer::index');

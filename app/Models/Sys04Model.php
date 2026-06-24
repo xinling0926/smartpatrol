@@ -109,7 +109,7 @@ class Sys04Model extends BaseModel
         }
 
         // 常見的前綴
-        $commonPrefixes = ['query', 'form', 'device', 'repair', 'annual', 'approve', 'generate', 'system', 'operation', 'emma', 'android'];
+        $commonPrefixes = ['query', 'form', 'device', 'repair', 'annual', 'approve', 'generate', 'system', 'operation', 'emma', 'android', 'eui'];
         foreach ($commonPrefixes as $prefix) {
             if (str_starts_with($name, $prefix) && strlen($name) > strlen($prefix)) {
                 $suffix = substr($name, strlen($prefix));

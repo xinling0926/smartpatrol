@@ -1375,16 +1375,16 @@ class FormItem extends AdminController
                 $this->data['data']->fmd0101 = $fmd01->fmd0101;
                 $fmd3103 = json_decode($fmd31->fmd3103);
                 $this->data['data']->fmd3103 = [1 => $fmd3103->ERROR ?? 0, 2 => $fmd3103->MISS ?? 0];
-                $this->data['data']->fmd3104 = json_decode($fmd31->fmd3104);
+                $this->data['data']->fmd3104 = json_decode($fmd31->fmd3104) ?: [];
             } else {
                 $this->data['data']->fmd0101 = $id;
                 $this->data['data']->fmd3103 = [1 => 0, 2 => 0];
-                $this->data['data']->fmd3104 = new \stdClass();
+                $this->data['data']->fmd3104 = [];
             }
         } else {
             $this->data['data']->fmd0101 = $id;
             $this->data['data']->fmd3103 = [1 => 0, 2 => 0];
-            $this->data['data']->fmd3104 = new \stdClass();
+            $this->data['data']->fmd3104 = [];
         }
 
         $_errType = [1 => '異常', 2 => '漏檢'];

@@ -111,6 +111,9 @@ $routes->group('form-item', static function ($routes) {
     $routes->match(['GET', 'POST'], 'edit-fmd07/(:num)', 'FormItem::editFmd07/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd08/(:num)', 'FormItem::editFmd08/$1');
     $routes->match(['GET', 'POST'], 'edit-fmd09/(:num)', 'FormItem::editFmd09/$1');
+    $routes->match(['GET', 'POST'], 'edit-fmd31/(:num)', 'FormItem::editFmd31/$1');
+    $routes->match(['GET', 'POST'], 'edit-fmd31', 'FormItem::editFmd31');
+    $routes->get('getsys012dev01/(:num)', 'FormItem::getsys012dev01/$1');
     $routes->match(['GET', 'POST'], 'delete-fmd02', 'FormItem::deleteFmd02');
     $routes->match(['GET', 'POST'], 'delete-fmd04', 'FormItem::deleteFmd04');
     $routes->match(['GET', 'POST'], 'delete-fmd06', 'FormItem::deleteFmd06');
@@ -508,6 +511,9 @@ $routes->group('form_item', static function ($routes) {
     $routes->match(['GET', 'POST'], 'commit/', 'FormItem::commit');
     $routes->match(['GET', 'POST'], 'check-out', 'FormItem::checkOut');
     $routes->match(['GET', 'POST'], 'check-out/', 'FormItem::checkOut');
+    $routes->match(['GET', 'POST'], 'edit_fmd31/(:num)', 'FormItem::editFmd31/$1');
+    $routes->match(['GET', 'POST'], 'edit_fmd31', 'FormItem::editFmd31');
+    $routes->get('getsys012dev01/(:num)', 'FormItem::getsys012dev01/$1');
     $routes->get('form-history/(:num)', 'FormItem::formHistory/$1');
 });
 
@@ -530,6 +536,9 @@ $routes->group('formitem', static function ($routes) {
     $routes->match(['GET', 'POST'], 'add_fmd09/(:num)', 'FormItem::addFmd09/$1');
     $routes->match(['GET', 'POST'], 'edit_form/(:num)', 'FormItem::editForm/$1');
     $routes->match(['GET', 'POST'], 'add_fmd0906/(:num)', 'FormItem::addFmd0906/$1');
+    $routes->match(['GET', 'POST'], 'edit_fmd31/(:num)', 'FormItem::editFmd31/$1');
+    $routes->match(['GET', 'POST'], 'edit_fmd31', 'FormItem::editFmd31');
+    $routes->get('getsys012dev01/(:num)', 'FormItem::getsys012dev01/$1');
     $routes->match(['GET', 'POST'], 'delete_fmd02', 'FormItem::deleteFmd02');
     $routes->match(['GET', 'POST'], 'delete_fmd02/', 'FormItem::deleteFmd02');
     $routes->match(['GET', 'POST'], 'delete_fmd04', 'FormItem::deleteFmd04');

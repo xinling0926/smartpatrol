@@ -50,7 +50,7 @@ class ReportNotification extends BaseCommand
                 $fmd3104 = json_decode($fmd31->fmd3104);
                 $fmd0104 = $fmd31->fmd0104;
 
-                helper('date');
+                helper(['date', 'common']);
                 $isoDate = $this->isoModel->isoDate($fmd31->fmd0105, date("Y-m-d", strtotime(yesterday())));
 
                 $fmd01 = $this->fmd01Model->find($fmd31->fmd0101);

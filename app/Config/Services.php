@@ -5,6 +5,7 @@ namespace Config;
 use CodeIgniter\Config\BaseService;
 use App\Libraries\Language;
 use App\Libraries\Message;
+use App\Libraries\Setting;
 use App\Libraries\User;
 
 /**
@@ -65,5 +66,19 @@ class Services extends BaseService
         }
 
         return new User();
+    }
+
+    /**
+     * The Setting library for system configuration.
+     *
+     * @return Setting
+     */
+    public static function setting(bool $getShared = true)
+    {
+        if ($getShared) {
+            return static::getSharedInstance('setting');
+        }
+
+        return new Setting();
     }
 }

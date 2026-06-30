@@ -50,8 +50,8 @@ class ReportNotification extends BaseCommand
                 $fmd3104 = json_decode($fmd31->fmd3104);
                 $fmd0104 = $fmd31->fmd0104;
 
-                helper(['date', 'common']);
-                $isoDate = $this->isoModel->isoDate($fmd31->fmd0105, date("Y-m-d", strtotime(yesterday())));
+                // 直接用原生 PHP 取昨天日期，避免 CLI 環境未載入 common helper 導致 yesterday() 未定義
+                $isoDate = $this->isoModel->isoDate($fmd31->fmd0105, date('Y-m-d', strtotime('-1 day')));
 
                 $fmd01 = $this->fmd01Model->find($fmd31->fmd0101);
                 if ($fmd01) {
@@ -111,7 +111,7 @@ class ReportNotification extends BaseCommand
                 $email->setTo(implode(',', $to2));
 
                 log_message('info', '[' . static::class . '] mail body: ' . $queue->body);
-                $email->setMessage(view('form_item/email/report_notification', $data));
+                $email->setMessage(view('formitem/email/report_notification', $data));
 
                 try {
                     if ($email->send()) {
